@@ -13,6 +13,6 @@ public class SearchProviderRegistry extends ProviderRegistry<SearchProvider> {
 
     public SearchProviderRegistry(List<SearchProvider> providers,
                                   @Value("${hotel.provider:hotelbeds}") String defaultProvider) {
-        super(providers, SearchProvider::id, ProviderId.from(defaultProvider));
+        super(providers, SearchProvider::id, ProviderId.fromOrDefault(defaultProvider, ProviderId.HOTELBEDS));
     }
 }

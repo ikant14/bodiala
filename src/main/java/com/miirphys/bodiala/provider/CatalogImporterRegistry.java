@@ -14,6 +14,6 @@ public class CatalogImporterRegistry extends ProviderRegistry<CatalogImporter> {
 
     public CatalogImporterRegistry(List<CatalogImporter> importers,
                                    @Value("${hotel.provider:hotelbeds}") String defaultProvider) {
-        super(importers, CatalogImporter::id, ProviderId.from(defaultProvider));
+        super(importers, CatalogImporter::id, ProviderId.fromOrDefault(defaultProvider, ProviderId.HOTELBEDS));
     }
 }

@@ -18,4 +18,20 @@ public enum ProviderId {
         }
         return ProviderId.valueOf(value.trim().toUpperCase(Locale.ROOT));
     }
+
+    /**
+     * Like {@link #from(String)} but returns {@code fallback} for a blank or unrecognised value
+     * instead of throwing — so a stale {@code hotel.provider} config (e.g. a removed supplier) can't
+     * brick startup. Used for the configurable default, never for explicit request routing.
+     */
+    public static ProviderId fromOrDefault(String value, ProviderId fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        try {
+            return ProviderId.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return fallback;
+        }
+    }
 }

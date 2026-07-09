@@ -25,7 +25,7 @@ public class BookingProviderRegistry extends ProviderRegistry<BookingProvider> {
     public BookingProviderRegistry(List<BookingProvider> providers,
                                    @Value("${hotel.provider:hotelbeds}") String defaultProvider,
                                    HotelBookingRepository bookings) {
-        super(providers, BookingProvider::id, ProviderId.from(defaultProvider));
+        super(providers, BookingProvider::id, ProviderId.fromOrDefault(defaultProvider, ProviderId.HOTELBEDS));
         this.bookings = bookings;
     }
 
