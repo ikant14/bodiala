@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "cmd.exe",
+      "runtimeArgs": ["/c", "cd /d C:\\Users\\user\\IdeaProjects\\bodiala-web && set PATH=C:\\Program Files\\nodejs;%PATH% && npm run dev"],
+      "port": 5173,
+      "autoPort": false
+    }
+  ]
+}

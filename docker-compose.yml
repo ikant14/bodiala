@@ -1,0 +1,31 @@
+# Local PostgreSQL for bodiala — this IS the app's datasource (application.properties defaults here).
+#
+#   docker compose up -d       # start Postgres in the background on :5432
+#   docker compose ps          # check health
+#   docker compose logs -f db  # follow logs
+#   docker compose down        # stop (keeps data in the named volume)
+#   docker compose down -v     # stop AND wipe the data volume (fresh DB next time)
+#
+# `.\dev.ps1` starts this for you. To run bodiala by hand, just start the DB first, then:
+#   .\gradlew.bat bootRun                                   # default profile
+#   .\gradlew.bat bootRun --args="--spring.profiles.active=stub"   # + the RezLive stub
+services:
+  db:
+    image: postgres:17
+    container_name: bodiala-postgres
+    environment:
+      POSTGRES_DB: bodiala
+      POSTGRES_USER: bodiala
+      POSTGRES_PASSWORD: bodiala
+    ports:
+      - "5432:5432"
+    volumes:
+      - bodiala-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bodiala -d bodiala"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bodiala-pgdata:

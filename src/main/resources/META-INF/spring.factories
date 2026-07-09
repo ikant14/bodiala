@@ -1,0 +1,3 @@
+# Registers the .env loader so it runs before the application context starts.
+org.springframework.boot.EnvironmentPostProcessor=\
+  com.miirphys.bodiala.config.DotEnvEnvironmentPostProcessor
