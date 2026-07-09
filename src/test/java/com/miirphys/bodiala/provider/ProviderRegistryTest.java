@@ -22,24 +22,22 @@ class ProviderRegistryTest {
 
     @Test
     void nullResolvesToDefault() {
-        ImplRegistry registry = new ImplRegistry(
-                List.of(new Impl(ProviderId.REZLIVE), new Impl(ProviderId.HOTELBEDS)), ProviderId.REZLIVE);
+        ImplRegistry registry = new ImplRegistry(List.of(new Impl(ProviderId.HOTELBEDS)), ProviderId.HOTELBEDS);
 
-        assertThat(registry.resolve(null).id()).isEqualTo(ProviderId.REZLIVE);
-        assertThat(registry.defaultId()).isEqualTo(ProviderId.REZLIVE);
+        assertThat(registry.resolve(null).id()).isEqualTo(ProviderId.HOTELBEDS);
+        assertThat(registry.defaultId()).isEqualTo(ProviderId.HOTELBEDS);
     }
 
     @Test
     void explicitProviderIsHonoured() {
-        ImplRegistry registry = new ImplRegistry(
-                List.of(new Impl(ProviderId.REZLIVE), new Impl(ProviderId.HOTELBEDS)), ProviderId.REZLIVE);
+        ImplRegistry registry = new ImplRegistry(List.of(new Impl(ProviderId.HOTELBEDS)), ProviderId.HOTELBEDS);
 
         assertThat(registry.resolve(ProviderId.HOTELBEDS).id()).isEqualTo(ProviderId.HOTELBEDS);
     }
 
     @Test
     void unregisteredProviderIsRejected() {
-        ImplRegistry registry = new ImplRegistry(List.of(new Impl(ProviderId.REZLIVE)), ProviderId.REZLIVE);
+        ImplRegistry registry = new ImplRegistry(List.of(), ProviderId.HOTELBEDS);
 
         assertThatThrownBy(() -> registry.resolve(ProviderId.HOTELBEDS))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -49,8 +47,8 @@ class ProviderRegistryTest {
     @Test
     void duplicateImplementationsAreRejectedAtStartup() {
         assertThatThrownBy(() -> new ImplRegistry(
-                List.of(new Impl(ProviderId.REZLIVE), new Impl(ProviderId.REZLIVE)), ProviderId.REZLIVE))
+                List.of(new Impl(ProviderId.HOTELBEDS), new Impl(ProviderId.HOTELBEDS)), ProviderId.HOTELBEDS))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("REZLIVE");
+                .hasMessageContaining("HOTELBEDS");
     }
 }

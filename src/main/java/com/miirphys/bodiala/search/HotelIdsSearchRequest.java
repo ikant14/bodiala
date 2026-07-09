@@ -4,8 +4,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Search-by-hotel-ids (findhotelbyid) request. {@code hotelIds} are RezLive HotelCodes (from the
- * Hotel Details master); RezLive recommends ~50 ids per request. Dates are ISO ({@code yyyy-MM-dd}).
+ * Search-by-hotel-ids request. {@code hotelIds} are the supplier's hotel codes (~50 per request
+ * recommended). Dates are ISO ({@code yyyy-MM-dd}).
  */
 public record HotelIdsSearchRequest(
         LocalDate arrivalDate,

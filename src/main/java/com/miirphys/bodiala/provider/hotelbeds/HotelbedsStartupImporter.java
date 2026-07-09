@@ -11,8 +11,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Seeds the static-data cache from the Hotelbeds Content API on startup, so you don't have to call
- * {@code POST /api/static-data/import?provider=hotelbeds} by hand — the Hotelbeds counterpart of
- * {@link com.miirphys.bodiala.provider.rezlive.staticimport.StaticDataStartupImporter}.
+ * {@code POST /api/static-data/import?provider=hotelbeds} by hand.
  *
  * <p>Guarded to be safe and quiet: only when {@code hotel.provider=hotelbeds}, credentials are set,
  * {@code hotelbeds.import-on-startup} is enabled (ON only in the {@code hotelbeds-stub} profile, so a

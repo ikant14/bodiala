@@ -8,13 +8,10 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 /**
- * Hotel Details master record. RezLive CSV columns:
- * {@code HotelCode, Name, City, CountryCode, Rating, HotelAddress, HotelPostelCode,
- * Latitude, Longitude, Desc}.
+ * Hotel Details master record — the shared cache row for a hotel: code, name, city/country codes,
+ * rating, address, postal code, coordinates and description.
  *
- * <p>Note: the CSV header for the postal code is misspelled {@code HotelPostelCode} in the
- * RezLive docs; it is mapped here to the correctly-spelled {@code hotelPostalCode} field.
- * {@code HotelCode} is documented as Int but stored as Long for headroom.
+ * <p>{@code hotelCode} is stored as {@code Long} for headroom.
  */
 @Entity
 @Table(name = "hotel", indexes = {
@@ -42,7 +39,7 @@ public class Hotel {
     @Column(name = "hotel_address", length = 1024)
     private String hotelAddress;
 
-    /** Maps the CSV column documented (misspelled) as {@code HotelPostelCode}. */
+    /** Hotel postal / ZIP code. */
     @Column(name = "hotel_postal_code")
     private String hotelPostalCode;
 

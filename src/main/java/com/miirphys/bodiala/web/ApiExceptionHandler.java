@@ -50,7 +50,7 @@ public class ApiExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_IMPLEMENTED, e.getMessage());
     }
 
-    /** Supplier returned an error body (RezLive {@code <error>} / Hotelbeds error JSON) → 502. */
+    /** Supplier returned an error body (Hotelbeds error JSON) → 502. */
     @ExceptionHandler(UpstreamApiException.class)
     public ProblemDetail upstreamError(UpstreamApiException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, "Upstream provider error: " + e.getMessage());

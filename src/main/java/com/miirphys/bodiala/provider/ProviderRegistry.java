@@ -12,7 +12,7 @@ import java.util.function.Function;
  * <p>Both suppliers' beans are always in the context now (they're no longer gated by
  * {@code hotel.provider}); a request selects a supplier with the {@code ?provider=} query param, and
  * omitting it falls back to the configured default ({@code hotel.provider}, itself defaulting to
- * {@code rezlive}).
+ * {@code hotelbeds}).
  */
 public abstract class ProviderRegistry<T> {
 

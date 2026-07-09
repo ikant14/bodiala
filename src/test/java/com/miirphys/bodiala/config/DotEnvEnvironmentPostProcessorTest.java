@@ -21,10 +21,10 @@ class DotEnvEnvironmentPostProcessorTest {
         Path env = dir.resolve(".env");
         Files.writeString(env, """
                 # a comment line
-                REZLIVE_API_KEY=abc123
-                REZLIVE_AGENT_CODE = AG-01
-                REZLIVE_USER_NAME="quoted user"
-                export REZLIVE_BASE_URL=http://example/action
+                HOTELBEDS_API_KEY=abc123
+                HOTELBEDS_SECRET = AG-01
+                HOTELBEDS_LANGUAGE="quoted lang"
+                export HOTELBEDS_BASE_URL=http://example/api
 
                 NO_EQUALS_SIGN_IS_IGNORED
                 """);
@@ -37,10 +37,10 @@ class DotEnvEnvironmentPostProcessorTest {
             System.clearProperty("dotenv.path");
         }
 
-        assertThat(environment.getProperty("REZLIVE_API_KEY")).isEqualTo("abc123");
-        assertThat(environment.getProperty("REZLIVE_AGENT_CODE")).isEqualTo("AG-01");   // trims spaces
-        assertThat(environment.getProperty("REZLIVE_USER_NAME")).isEqualTo("quoted user"); // strips quotes
-        assertThat(environment.getProperty("REZLIVE_BASE_URL")).isEqualTo("http://example/action"); // export prefix
+        assertThat(environment.getProperty("HOTELBEDS_API_KEY")).isEqualTo("abc123");
+        assertThat(environment.getProperty("HOTELBEDS_SECRET")).isEqualTo("AG-01");   // trims spaces
+        assertThat(environment.getProperty("HOTELBEDS_LANGUAGE")).isEqualTo("quoted lang"); // strips quotes
+        assertThat(environment.getProperty("HOTELBEDS_BASE_URL")).isEqualTo("http://example/api"); // export prefix
         assertThat(environment.getProperty("NO_EQUALS_SIGN_IS_IGNORED")).isNull();
     }
 

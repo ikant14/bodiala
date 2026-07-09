@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class SearchProviderRegistry extends ProviderRegistry<SearchProvider> {
 
     public SearchProviderRegistry(List<SearchProvider> providers,
-                                  @Value("${hotel.provider:rezlive}") String defaultProvider) {
+                                  @Value("${hotel.provider:hotelbeds}") String defaultProvider) {
         super(providers, SearchProvider::id, ProviderId.from(defaultProvider));
     }
 }

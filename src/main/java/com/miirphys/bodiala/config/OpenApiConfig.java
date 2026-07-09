@@ -17,15 +17,15 @@ public class OpenApiConfig {
     public OpenAPI bodialaOpenApi() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("bodiala — RezLive integration API")
+                        .title("bodiala — Hotelbeds integration API")
                         .version("0.0.1")
                         .description("""
-                                Endpoints for RezLive static data.
+                                Endpoints for the Hotelbeds (APItude) integration.
 
-                                - **/api/static-data/**** — import the RezLive CSV master files into the \
-                                local cache and query countries / cities / hotels.
-                                - **/api/hotel-content/**** — live per-hotel content via RezLive \
-                                `gethoteldetails` (returns 503 until credentials + IP whitelisting are set).
+                                - **/api/static-data/**** — sync the Hotelbeds catalog into the local cache \
+                                and query countries / cities / hotels.
+                                - **/api/search/**** — live availability search (aggregated, provider-tagged).
+                                - **/api/bookings/**** — the prebook / book / cancel chain.
                                 """)
                         .license(new License().name("Proprietary")));
     }

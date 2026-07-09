@@ -6,8 +6,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Country master record. RezLive CSV columns: {@code Name, CountryCode}.
- * {@code CountryCode} is the unique 2-letter ISO code (e.g. "AE").
+ * Country master record (name + 2-letter ISO country code).
+ * {@code countryCode} is the unique 2-letter ISO code (e.g. "AE").
  */
 @Entity
 @Table(name = "country")

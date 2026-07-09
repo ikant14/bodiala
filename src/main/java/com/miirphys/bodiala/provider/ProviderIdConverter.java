@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Binds the {@code ?provider=} query param to {@link ProviderId} case-insensitively, so
- * {@code rezlive}, {@code RezLive} and {@code REZLIVE} all resolve. A blank value binds to
+ * {@code hotelbeds}, {@code HotelBeds} and {@code HOTELBEDS} all resolve. A blank value binds to
  * {@code null} (the controller then falls back to the default provider); an unknown value fails
  * conversion → HTTP 400. Spring Boot auto-registers {@link Converter} beans into the MVC
  * conversion service.

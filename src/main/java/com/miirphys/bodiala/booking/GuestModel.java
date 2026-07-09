@@ -1,6 +1,6 @@
 package com.miirphys.bodiala.booking;
 
-/** A guest/occupant. {@code age} is required by RezLive when {@code isChild} is true. */
+/** A guest/occupant. {@code age} is required when {@code isChild} is true. */
 public record GuestModel(
         String salutation,
         String firstName,

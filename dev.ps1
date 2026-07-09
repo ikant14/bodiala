@@ -1,15 +1,13 @@
-# Local dev launcher for bodiala + a provider stub.
+# Local dev launcher for bodiala + the Hotelbeds stub.
 # Also starts the PostgreSQL container (docker-compose.yml) that bodiala uses as its datasource.
 #
 #   .\dev.ps1              # Postgres (:5432) + hotelbeds-stub (:9091) + bodiala 'hotelbeds-stub' profile (:8080)
-#                          # -> DEFAULT: full Hotelbeds flow against the fake API; the cache auto-seeds on
-#                          #    startup (no manual /import), search returns a multi-destination catalog.
-#   .\dev.ps1 -RezLive     # Postgres (:5432) + rezlive-stub (:9090) + bodiala 'stub' profile (:8080)
-#                          # -> the (kept) RezLive path: live content/search/booking against the fake RezLive API
+#                          # -> the cache auto-seeds from the stub on startup (no manual /import); waits for
+#                          #    the stub first; search returns a multi-destination catalog.
 #   .\dev.ps1 -StaticOnly  # Postgres (:5432) + ONLY bodiala (default profile) — enough for static-data query
 #
 # Each app opens in its own console window; close the window (or Ctrl+C) to stop it.
-param([switch]$RezLive, [switch]$StaticOnly, [switch]$Hotelbeds)
+param([switch]$StaticOnly)
 
 $ErrorActionPreference = "Stop"
 
@@ -18,7 +16,6 @@ $jdk25 = "C:\Program Files\Eclipse Adoptium\jdk-25.0.3.9-hotspot"
 if (-not $env:JAVA_HOME -and (Test-Path $jdk25)) { $env:JAVA_HOME = $jdk25 }
 
 $bodiala = $PSScriptRoot
-$rezliveStub = Join-Path (Split-Path $bodiala -Parent) "rezlive-stub"
 $hotelbedsStub = Join-Path (Split-Path $bodiala -Parent) "hotelbeds-stub"
 
 function Start-App($dir, $extraArgs) {
@@ -47,24 +44,12 @@ try {
 }
 finally { Pop-Location }
 
-if ($RezLive) {
-    if (Test-Path (Join-Path $rezliveStub "gradlew.bat")) {
-        Write-Host "Starting RezLive stub -> http://localhost:9090" -ForegroundColor Cyan
-        Start-App $rezliveStub @()
-        Start-Sleep -Seconds 2
-    }
-    else {
-        Write-Warning "rezlive-stub not found next to bodiala; live API calls will return 503 without it."
-    }
-    Write-Host "Starting bodiala (profile: stub) -> http://localhost:8080" -ForegroundColor Cyan
-    Start-App $bodiala @("--args=--spring.profiles.active=stub")
-}
-elseif ($StaticOnly) {
+if ($StaticOnly) {
     Write-Host "Starting bodiala (default profile, static-data only) -> http://localhost:8080" -ForegroundColor Cyan
     Start-App $bodiala @()
 }
 else {
-    # DEFAULT: Hotelbeds against the stub, cache auto-seeded on startup.
+    # Hotelbeds against the stub, cache auto-seeded on startup.
     if (Test-Path (Join-Path $hotelbedsStub "gradlew.bat")) {
         Write-Host "Starting Hotelbeds stub -> http://localhost:9091" -ForegroundColor Cyan
         Start-App $hotelbedsStub @()

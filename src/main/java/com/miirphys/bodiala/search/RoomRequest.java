@@ -3,7 +3,7 @@ package com.miirphys.bodiala.search;
 import java.util.List;
 
 /**
- * One requested room. {@code childrenAges} is required by RezLive when {@code noOfChilds > 0}.
+ * One requested room. {@code childrenAges} is required when {@code noOfChilds > 0}.
  */
 public record RoomRequest(
         String type,

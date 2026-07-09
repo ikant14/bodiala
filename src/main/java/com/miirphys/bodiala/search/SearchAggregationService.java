@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Fans a search out across suppliers and flattens the results into one provider-tagged
- * {@link CombinedSearchResult}. By default it queries <em>every</em> configured supplier (RezLive +
- * Hotelbeds) so the caller sees both; passing an explicit {@code provider} narrows it to that one.
+ * {@link CombinedSearchResult}. By default it queries <em>every</em> configured supplier so the caller
+ * sees all results; passing an explicit {@code provider} narrows it to that one.
  *
  * <p>Partial-failure tolerant: a supplier with no credentials is reported as {@code not configured}
  * and skipped, and a supplier that throws (upstream 4xx/5xx, transport error) has its message captured

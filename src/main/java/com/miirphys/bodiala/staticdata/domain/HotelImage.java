@@ -9,8 +9,8 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 /**
- * Hotels Images master record. RezLive CSV columns: {@code HotelCode, Image}.
- * One row per image, so a surrogate id is used and rows are joined to a hotel on
+ * Hotel image master record (one image URL per row).
+ * A surrogate id is used and rows are joined to a hotel on
  * {@code hotelCode}.
  */
 @Entity

@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Hotelbeds {@link CatalogImporter}: pages the Content API {@code GET /hotel-content-api/1.0/hotels}
- * and fills the shared cache (full-snapshot delete-all + insert, like the RezLive importer). Country
+ * and fills the shared cache (full-snapshot delete-all + insert). Country
  * and City are derived from the hotels; room amenities aren't a separate Content concept, so that
  * table is cleared.
  *

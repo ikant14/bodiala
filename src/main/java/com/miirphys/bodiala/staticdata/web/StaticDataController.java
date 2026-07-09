@@ -31,11 +31,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Triggers ingestion of the RezLive CSV master files and queries the local static-data cache.
+ * Syncs the Hotelbeds catalog into the local static-data cache and queries it.
  */
 @RestController
 @RequestMapping("/api/static-data")
-@Tag(name = "Static data", description = "Import and query the cached RezLive CSV master files")
+@Tag(name = "Static data", description = "Sync and query the cached Hotelbeds catalog")
 public class StaticDataController {
 
     private final CatalogImporterRegistry catalogImporters;
@@ -67,11 +67,10 @@ public class StaticDataController {
 
     /** Import the catalog from the supplier named by {@code ?provider=} (default {@code hotel.provider}). */
     @Operation(summary = "Import the catalog from a supplier",
-            description = "Fills the local cache from the chosen supplier — RezLive CSV master files, or the "
-                    + "Hotelbeds Content API — replacing each table (idempotent).")
+            description = "Fills the local cache from the Hotelbeds Content API, replacing each table (idempotent).")
     @PostMapping("/import")
     public ImportResult importCatalog(
-            @Parameter(description = "Supplier to import from: rezlive or hotelbeds (case-insensitive). "
+            @Parameter(description = "Supplier to import from: hotelbeds (case-insensitive). "
                     + "Omit to use the configured default.")
             @RequestParam(required = false) ProviderId provider) {
         return catalogImporters.resolve(provider).importCatalog();

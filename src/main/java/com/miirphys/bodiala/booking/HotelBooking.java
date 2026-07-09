@@ -11,8 +11,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 /**
- * A booking we made through RezLive, persisted locally. Keyed by our surrogate id; the RezLive
- * {@code BookingId}/{@code BookingCode} pair (needed for cancel / details) is stored alongside.
+ * A booking we made through a supplier, persisted locally. Keyed by our surrogate id; the supplier's
+ * booking reference ({@code bookingId}) is stored alongside for cancel / lookup. ({@code bookingCode}
+ * is a legacy second identifier, unused by Hotelbeds — it stores a single reference.)
  */
 @Entity
 @Table(name = "hotel_booking", indexes = {
@@ -39,11 +40,10 @@ public class HotelBooking {
 
     /**
      * Which supplier created this booking (see {@code com.miirphys.bodiala.provider.ProviderId}).
-     * New rows are stamped by their provider; rows written before the multi-provider split — and any
-     * left NULL by the additive migration — read as {@code REZLIVE}.
+     * New rows are stamped by their provider; null/blank rows fall back to {@code HOTELBEDS}.
      */
     @Column(name = "provider")
-    private String provider = "REZLIVE";
+    private String provider = "HOTELBEDS";
 
     @Column(name = "hotel_id")
     private String hotelId;

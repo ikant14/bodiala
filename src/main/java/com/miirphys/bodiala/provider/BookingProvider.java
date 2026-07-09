@@ -1,15 +1,10 @@
 package com.miirphys.bodiala.provider;
 
 import com.miirphys.bodiala.booking.BookRequest;
-import com.miirphys.bodiala.booking.CancellationPolicyLookupRequest;
 import com.miirphys.bodiala.booking.HotelBooking;
 import com.miirphys.bodiala.booking.PrebookRequest;
 import com.miirphys.bodiala.provider.model.CancellationResult;
 import com.miirphys.bodiala.provider.model.RateCheckResult;
-import com.miirphys.bodiala.provider.rezlive.client.dto.booking.book.GetBookingResponse;
-import com.miirphys.bodiala.provider.rezlive.client.dto.booking.cancellation.CancellationPolicyAfterBookingResponse;
-import com.miirphys.bodiala.provider.rezlive.client.dto.booking.cancellation.CancellationPolicyResponse;
-import com.miirphys.bodiala.provider.rezlive.client.dto.booking.confirmation.HotelConfirmationResponse;
 import java.util.List;
 
 /**
@@ -24,10 +19,6 @@ import java.util.List;
  * {@code @Transactional} (the supplier HTTP call must not run inside a DB transaction). The stored
  * booking carries its {@code provider}, so {@link #listBookings()}/{@link #getStored(String)} read
  * the shared table regardless of who created the row.
- *
- * <p>The four "secondary" reads below still return the RezLive DTOs (not yet neutralised); they are
- * Swagger-only, not wired to the frontend. The Hotelbeds implementation throws
- * {@code UnsupportedOperationException} for them (→ 501) until they're neutralised.
  */
 public interface BookingProvider {
 
@@ -44,12 +35,4 @@ public interface BookingProvider {
     List<HotelBooking> listBookings();
 
     HotelBooking getStored(String bookingId);
-
-    GetBookingResponse getBookingDetails(String bookingId);
-
-    HotelConfirmationResponse confirmationDetails(String bookingId);
-
-    CancellationPolicyAfterBookingResponse cancellationPolicyAfterBooking(String bookingId);
-
-    CancellationPolicyResponse cancellationPolicy(CancellationPolicyLookupRequest request);
 }

@@ -56,7 +56,7 @@ public class HotelbedsSearchProvider implements SearchProvider {
         if (request.city().trim().length() > 3) {
             throw new IllegalArgumentException("Hotelbeds destination code must be 1-3 characters (e.g. DXB, PMI); got '"
                     + request.city() + "'. Use a Hotelbeds destination code — from a Hotelbeds catalog import "
-                    + "(POST /api/static-data/import?provider=hotelbeds) — not a RezLive numeric city code.");
+                    + "(POST /api/static-data/import?provider=hotelbeds) — not a plain city name/number.");
         }
         Map<String, Object> body = baseRequest(request.arrivalDate(), request.departureDate(), request.rooms());
         body.put("destination", Map.of("code", request.city().trim()));

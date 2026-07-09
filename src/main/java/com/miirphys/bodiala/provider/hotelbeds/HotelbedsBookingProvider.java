@@ -2,7 +2,6 @@ package com.miirphys.bodiala.provider.hotelbeds;
 
 import com.miirphys.bodiala.booking.BookRequest;
 import com.miirphys.bodiala.booking.BookRoom;
-import com.miirphys.bodiala.booking.CancellationPolicyLookupRequest;
 import com.miirphys.bodiala.booking.GuestModel;
 import com.miirphys.bodiala.booking.HotelBooking;
 import com.miirphys.bodiala.booking.HotelBookingRepository;
@@ -14,10 +13,6 @@ import com.miirphys.bodiala.provider.hotelbeds.dto.BookingResponse;
 import com.miirphys.bodiala.provider.hotelbeds.dto.CheckRateResponse;
 import com.miirphys.bodiala.provider.model.CancellationResult;
 import com.miirphys.bodiala.provider.model.RateCheckResult;
-import com.miirphys.bodiala.provider.rezlive.client.dto.booking.book.GetBookingResponse;
-import com.miirphys.bodiala.provider.rezlive.client.dto.booking.cancellation.CancellationPolicyAfterBookingResponse;
-import com.miirphys.bodiala.provider.rezlive.client.dto.booking.cancellation.CancellationPolicyResponse;
-import com.miirphys.bodiala.provider.rezlive.client.dto.booking.confirmation.HotelConfirmationResponse;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,11 +31,9 @@ import org.springframework.stereotype.Component;
  * {@code prebook} → {@code POST /checkrates} (always, for a fresh rateKey + price), {@code book} →
  * {@code POST /bookings}, {@code cancel} → {@code DELETE /bookings/{ref}}. Persistence uses the
  * shared {@link HotelBooking} table (stamped {@code provider=HOTELBEDS}); {@code book}/{@code cancel}
- * are deliberately NOT {@code @Transactional}. The four secondary reads are not yet mapped for
- * Hotelbeds and throw {@link UnsupportedOperationException} (→ 501). Always loaded and registered
- * under {@link ProviderId#HOTELBEDS}; new requests select it via {@code ?provider=hotelbeds}, while
- * operations on an existing booking route here automatically when the stored row's {@code provider}
- * is HOTELBEDS.
+ * are deliberately NOT {@code @Transactional}. Registered under {@link ProviderId#HOTELBEDS}; new
+ * requests select it via {@code ?provider=hotelbeds}, while operations on an existing booking route
+ * here automatically when the stored row's {@code provider} is HOTELBEDS.
  */
 @Component
 public class HotelbedsBookingProvider implements BookingProvider {
@@ -183,28 +176,6 @@ public class HotelbedsBookingProvider implements BookingProvider {
                 .orElseThrow(() -> new NoSuchElementException("Unknown bookingId " + bookingId));
     }
 
-    // --- secondary reads: not yet mapped for Hotelbeds (→ 501) -----------------------------
-
-    @Override
-    public GetBookingResponse getBookingDetails(String bookingId) {
-        throw notMapped("getBookingDetails");
-    }
-
-    @Override
-    public HotelConfirmationResponse confirmationDetails(String bookingId) {
-        throw notMapped("confirmationDetails");
-    }
-
-    @Override
-    public CancellationPolicyAfterBookingResponse cancellationPolicyAfterBooking(String bookingId) {
-        throw notMapped("cancellationPolicyAfterBooking");
-    }
-
-    @Override
-    public CancellationPolicyResponse cancellationPolicy(CancellationPolicyLookupRequest request) {
-        throw notMapped("cancellationPolicy");
-    }
-
     // --- helpers ---------------------------------------------------------------------------
 
     private List<Map<String, Object>> buildRooms(List<BookRoom> src) {
@@ -298,9 +269,5 @@ public class HotelbedsBookingProvider implements BookingProvider {
             throw new IllegalStateException(
                     "Hotelbeds credentials are not configured (hotelbeds.api-key / hotelbeds.secret).");
         }
-    }
-
-    private static UnsupportedOperationException notMapped(String op) {
-        return new UnsupportedOperationException(op + " is not yet supported for the Hotelbeds provider");
     }
 }

@@ -23,7 +23,7 @@ public class BookingProviderRegistry extends ProviderRegistry<BookingProvider> {
     private final HotelBookingRepository bookings;
 
     public BookingProviderRegistry(List<BookingProvider> providers,
-                                   @Value("${hotel.provider:rezlive}") String defaultProvider,
+                                   @Value("${hotel.provider:hotelbeds}") String defaultProvider,
                                    HotelBookingRepository bookings) {
         super(providers, BookingProvider::id, ProviderId.from(defaultProvider));
         this.bookings = bookings;
@@ -40,16 +40,15 @@ public class BookingProviderRegistry extends ProviderRegistry<BookingProvider> {
     }
 
     /**
-     * The supplier that owns a stored booking. Rows written before the {@code provider} column
-     * existed are null/blank and are, by definition, RezLive (Hotelbeds persistence didn't exist
-     * yet) — this mirrors the {@code HotelBooking.provider} field default, so it does NOT drift with
-     * the configurable {@code hotel.provider} default. An unrecognised value is a server-side data
+     * The supplier that owns a stored booking, from its persisted {@code provider} column. Null/blank
+     * rows fall back to {@link ProviderId#HOTELBEDS} (the sole supplier), mirroring the
+     * {@code HotelBooking.provider} field default. An unrecognised value is a server-side data
      * problem, surfaced as 503 (IllegalState) rather than a client-facing 400.
      */
     private static ProviderId providerOf(HotelBooking booking) {
         String provider = booking.getProvider();
         if (provider == null || provider.isBlank()) {
-            return ProviderId.REZLIVE;
+            return ProviderId.HOTELBEDS;
         }
         try {
             return ProviderId.from(provider);

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 public class CatalogImporterRegistry extends ProviderRegistry<CatalogImporter> {
 
     public CatalogImporterRegistry(List<CatalogImporter> importers,
-                                   @Value("${hotel.provider:rezlive}") String defaultProvider) {
+                                   @Value("${hotel.provider:hotelbeds}") String defaultProvider) {
         super(importers, CatalogImporter::id, ProviderId.from(defaultProvider));
     }
 }

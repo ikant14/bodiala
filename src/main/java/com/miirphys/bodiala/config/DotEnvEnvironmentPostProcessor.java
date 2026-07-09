@@ -16,7 +16,7 @@ import org.springframework.core.env.MapPropertySource;
 
 /**
  * Loads a project-root {@code .env} file (simple {@code KEY=VALUE} lines) into the Spring
- * {@link ConfigurableEnvironment} before the context starts, so the {@code ${REZLIVE_*}}
+ * {@link ConfigurableEnvironment} before the context starts, so the {@code ${HOTELBEDS_*}}
  * placeholders in {@code application.properties} resolve from it. Spring Boot does not read
  * {@code .env} natively — this is the bridge.
  *

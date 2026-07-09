@@ -14,24 +14,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link BookingProviderRegistry#forBooking(String)} — the new routing that sends an
+ * Unit tests for {@link BookingProviderRegistry#forBooking(String)} — the routing that sends an
  * operation back to the supplier that created the booking, keyed on its persisted {@code provider}
  * column. Uses mocks, so no Spring context / DB.
  */
 class BookingProviderRegistryTest {
 
-    private final BookingProvider rezlive = mock(BookingProvider.class);
     private final BookingProvider hotelbeds = mock(BookingProvider.class);
     private final HotelBookingRepository bookings = mock(HotelBookingRepository.class);
 
     @BeforeEach
     void stubIds() {
-        when(rezlive.id()).thenReturn(ProviderId.REZLIVE);
         when(hotelbeds.id()).thenReturn(ProviderId.HOTELBEDS);
     }
 
-    private BookingProviderRegistry registry(String defaultProvider) {
-        return new BookingProviderRegistry(List.of(rezlive, hotelbeds), defaultProvider, bookings);
+    private BookingProviderRegistry registry() {
+        return new BookingProviderRegistry(List.of(hotelbeds), "hotelbeds", bookings);
     }
 
     private void storedProviderIs(String provider) {
@@ -44,31 +42,25 @@ class BookingProviderRegistryTest {
     @Test
     void routesToTheSupplierThatCreatedTheBooking() {
         storedProviderIs("HOTELBEDS");
-        assertThat(registry("rezlive").forBooking("BID").id()).isEqualTo(ProviderId.HOTELBEDS);
+        assertThat(registry().forBooking("BID").id()).isEqualTo(ProviderId.HOTELBEDS);
     }
 
     @Test
     void storedProviderMatchIsCaseInsensitive() {
         storedProviderIs("hotelbeds");
-        assertThat(registry("rezlive").forBooking("BID").id()).isEqualTo(ProviderId.HOTELBEDS);
+        assertThat(registry().forBooking("BID").id()).isEqualTo(ProviderId.HOTELBEDS);
     }
 
     @Test
-    void legacyNullRowRoutesToRezLiveEvenWhenTheDefaultIsHotelbeds() {
+    void legacyNullRowFallsBackToHotelbeds() {
         storedProviderIs(null);
-        assertThat(registry("hotelbeds").forBooking("BID").id()).isEqualTo(ProviderId.REZLIVE);
-    }
-
-    @Test
-    void blankRowRoutesToRezLive() {
-        storedProviderIs("   ");
-        assertThat(registry("hotelbeds").forBooking("BID").id()).isEqualTo(ProviderId.REZLIVE);
+        assertThat(registry().forBooking("BID").id()).isEqualTo(ProviderId.HOTELBEDS);
     }
 
     @Test
     void unrecognisedStoredProviderIsAServerError() {
         storedProviderIs("EXPEDIA");
-        assertThatThrownBy(() -> registry("rezlive").forBooking("BID"))
+        assertThatThrownBy(() -> registry().forBooking("BID"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("EXPEDIA");
     }
@@ -76,14 +68,12 @@ class BookingProviderRegistryTest {
     @Test
     void unknownBookingIdIsNotFound() {
         when(bookings.findByBookingId("NOPE")).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> registry("rezlive").forBooking("NOPE"))
+        assertThatThrownBy(() -> registry().forBooking("NOPE"))
                 .isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
-    void newBookingsDefaultToRezLiveProvider() {
-        // RezLive book() never calls setProvider — it relies on this field default, which forBooking
-        // reads back. Guard it so dropping the default fails here rather than misrouting at runtime.
-        assertThat(new HotelBooking().getProvider()).isEqualTo("REZLIVE");
+    void newBookingsDefaultToHotelbedsProvider() {
+        assertThat(new HotelBooking().getProvider()).isEqualTo("HOTELBEDS");
     }
 }

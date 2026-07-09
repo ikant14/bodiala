@@ -3,7 +3,7 @@ package com.miirphys.bodiala.booking;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Our clean prebook request. Dates are ISO; converted to RezLive dd/MM/yyyy by the service. */
+/** Our clean prebook request. Dates are ISO ({@code yyyy-MM-dd}). */
 public record PrebookRequest(
         String searchSessionId,
         LocalDate arrivalDate,

@@ -15,21 +15,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Live hotel availability search. By default it fans out to <em>every</em> configured supplier
- * (RezLive + Hotelbeds) and returns one combined, provider-tagged {@link CombinedSearchResult}; the
- * optional {@code ?provider=} query param (rezlive | hotelbeds, case-insensitive) narrows it to a
- * single supplier. Each returned hotel carries its supplier + that supplier's session/currency, so a
- * follow-up prebook/book can route correctly. A supplier that's unconfigured or fails is reported in
- * {@code providerStatus} rather than blanking the search; only when no queried supplier is configured
- * does the call 503.
+ * Live hotel availability search. Fans out across every configured supplier and returns one combined,
+ * provider-tagged {@link CombinedSearchResult}; the optional {@code ?provider=} query param
+ * (hotelbeds, case-insensitive) narrows it to a single supplier. Each returned hotel carries its
+ * supplier + that supplier's session/currency, so a follow-up prebook/book can route correctly. A
+ * supplier that's unconfigured or fails is reported in {@code providerStatus} rather than blanking the
+ * search; only when no queried supplier is configured does the call 503.
  */
 @RestController
 @RequestMapping("/api/search")
-@Tag(name = "Hotel search (live)", description = "findhotel / findhotelbyid — fans out to both suppliers; narrow with ?provider=")
+@Tag(name = "Hotel search (live)", description = "Aggregated availability search; narrow with ?provider=")
 public class HotelSearchController {
 
     private static final String PROVIDER_DESC =
-            "Limit the search to one supplier: rezlive or hotelbeds (case-insensitive). Omit to query all configured suppliers.";
+            "Limit the search to one supplier: hotelbeds (case-insensitive). Omit to query all configured suppliers.";
 
     private final SearchAggregationService searchAggregator;
 
@@ -37,9 +36,9 @@ public class HotelSearchController {
         this.searchAggregator = searchAggregator;
     }
 
-    @Operation(summary = "Search hotels by destination (findhotel)",
-            description = "Availability for a city over a date range, aggregated across suppliers. "
-                    + "Dates are ISO yyyy-MM-dd. Note: each supplier expects its own city/destination code.")
+    @Operation(summary = "Search hotels by destination",
+            description = "Availability for a destination over a date range, aggregated across suppliers. "
+                    + "Dates are ISO yyyy-MM-dd; `city` is the supplier's destination code.")
     @PostMapping("/by-destination")
     public CombinedSearchResult byDestination(@RequestBody DestinationSearchRequest request,
                                               @Parameter(description = PROVIDER_DESC)
@@ -47,7 +46,7 @@ public class HotelSearchController {
         return searchAggregator.searchByDestination(request, provider);
     }
 
-    @Operation(summary = "Search hotels by hotel ids (findhotelbyid)",
+    @Operation(summary = "Search hotels by hotel ids",
             description = "Availability for specific supplier hotel codes (~50 per request recommended), "
                     + "aggregated across suppliers.")
     @PostMapping("/by-hotel-ids")

@@ -7,8 +7,8 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 /**
- * Property Amenities master record. RezLive CSV columns: {@code HotelCode, HotelAmenities}.
- * Documented as one row per hotel with a list of amenities, so {@code hotelCode} is the key.
+ * Property Amenities master record — one row per hotel holding its list of hotel amenities,
+ * keyed by {@code hotelCode}.
  */
 @Entity
 @Table(name = "property_amenity")

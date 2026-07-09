@@ -3,11 +3,9 @@ package com.miirphys.bodiala.provider.model;
 import java.util.List;
 
 /**
- * Provider-neutral result of the pre-book / rate-check step (RezLive {@code prebook} ≡ Hotelbeds
- * {@code checkRates}). Its JSON mirrors what the frontend consumed from RezLive's
- * {@code PreBookingResponse}, so the API contract is unchanged: the refreshed per-room offer keys +
- * cancellation policy live under {@code preBookingRequest.preBooking}, and the price delta under
- * {@code preBookingDetails}.
+ * Provider-neutral result of the pre-book / rate-check step (Hotelbeds {@code checkRates}) — the
+ * shape the frontend consumes. The refreshed per-room offer keys + cancellation policy live under
+ * {@code preBookingRequest.preBooking}, and the price delta under {@code preBookingDetails}.
  */
 public record RateCheckResult(
         RequestEcho preBookingRequest,

@@ -7,11 +7,10 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 /**
- * City master record. RezLive CSV columns: {@code City, Name, CountryCode}.
+ * City master record (destination code + name + country code).
  *
- * <p>{@code City} is documented as a String holding a unique 3-5 character numeric code
- * (e.g. "968" = Dubai) and is the geo key passed as {@code <City>} in searches — hence it
- * is kept as a String, not an int.
+ * <p>{@code cityCode} holds the supplier's destination code (e.g. "PMI" for Palma) and is the geo
+ * key used in destination searches — hence it is kept as a String, not an int.
  */
 @Entity
 @Table(name = "city", indexes = @Index(name = "idx_city_country", columnList = "country_code"))

@@ -12,8 +12,8 @@ class ProviderIdConverterTest {
 
     @Test
     void bindsCaseInsensitively() {
-        assertThat(converter.convert("rezlive")).isEqualTo(ProviderId.REZLIVE);
-        assertThat(converter.convert("RezLive")).isEqualTo(ProviderId.REZLIVE);
+        assertThat(converter.convert("hotelbeds")).isEqualTo(ProviderId.HOTELBEDS);
+        assertThat(converter.convert("HotelBeds")).isEqualTo(ProviderId.HOTELBEDS);
         assertThat(converter.convert("HOTELBEDS")).isEqualTo(ProviderId.HOTELBEDS);
         assertThat(converter.convert(" hotelbeds ")).isEqualTo(ProviderId.HOTELBEDS);
     }
