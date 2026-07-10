@@ -36,6 +36,8 @@ class HotelbedsSearchMapperTest {
         SearchResult.FoundHotel found = result.hotels().get(0);
         assertThat(found.id()).isEqualTo("3424");
         assertThat(found.name()).isEqualTo("As Americas");
+        assertThat(found.city()).isEqualTo("CEN");                 // destinationCode → per-hotel city tag
+        assertThat(found.rating()).isEqualTo("4");                 // "4EST" normalised to the numeric star
         assertThat(found.price()).isEqualTo("354.39");             // minRate
         assertThat(found.roomDetails()).hasSize(2);
 

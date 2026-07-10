@@ -21,13 +21,18 @@ public record CombinedSearchResult(
         List<Hotel> hotels,
         List<ProviderStatus> providerStatus) {
 
-    /** One availability result, tagged with the supplier (and its session/currency) that produced it. */
+    /**
+     * One availability result, tagged with the supplier (and its session/currency) that produced it.
+     * {@code city} is the supplier destination code the hotel belongs to — set so a result spanning
+     * several cities (multi-city search) can label each hotel and route its booking to the right city.
+     */
     public record Hotel(
             String provider,
             String searchSessionId,
             String currency,
             String id,
             String name,
+            String city,
             String rating,
             String price,
             List<SearchResult.RoomDetail> roomDetails) {

@@ -35,7 +35,13 @@ public final class HotelbedsSearchMapper {
     private static SearchResult.FoundHotel toHotel(AvailabilityResponse.Hotel h) {
         List<SearchResult.RoomDetail> rooms = h.rooms() == null ? List.of()
                 : h.rooms().stream().flatMap(HotelbedsSearchMapper::toRooms).toList();
-        return new SearchResult.FoundHotel(String.valueOf(h.code()), h.name(), h.categoryCode(), h.minRate(), rooms);
+        // Normalise the star rating to the numeric value (e.g. "4EST" → "4") so it matches the cached
+        // detail-view rating and the frontend can render / filter it as a number.
+        Integer stars = HotelbedsCategory.stars(h.categoryCode());
+        String rating = stars == null ? null : String.valueOf(stars);
+        // destinationCode tags each hotel with its city so a multi-city result can label/route per hotel.
+        return new SearchResult.FoundHotel(String.valueOf(h.code()), h.name(), h.destinationCode(), rating,
+                h.minRate(), rooms);
     }
 
     private static Stream<SearchResult.RoomDetail> toRooms(AvailabilityResponse.Room room) {

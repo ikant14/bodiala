@@ -50,16 +50,25 @@ public class HotelbedsSearchProvider implements SearchProvider {
     public SearchResult searchByDestination(DestinationSearchRequest request) {
         requireCredentials();
         validate(request.arrivalDate(), request.departureDate(), request.rooms());
-        if (isBlank(request.city())) {
-            throw new IllegalArgumentException("city (Hotelbeds destination code) is required for destination search");
+        // Hotelbeds availability takes a single destination code; multi-city is routed through
+        // searchByHotelIds (resolved from the cache) by SearchAggregationService before reaching here.
+        List<String> cities = request.cities();
+        if (cities == null || cities.stream().allMatch(HotelbedsSearchProvider::isBlank)) {
+            throw new IllegalArgumentException("at least one city (Hotelbeds destination code) is required "
+                    + "for destination search");
         }
-        if (request.city().trim().length() > 3) {
+        if (cities.size() != 1) {
+            throw new IllegalArgumentException("Hotelbeds destination search takes exactly one city; got "
+                    + cities.size() + ". Multiple cities are searched via cached hotel ids.");
+        }
+        String city = cities.get(0).trim();
+        if (city.length() > 3) {
             throw new IllegalArgumentException("Hotelbeds destination code must be 1-3 characters (e.g. DXB, PMI); got '"
-                    + request.city() + "'. Use a Hotelbeds destination code — from a Hotelbeds catalog import "
+                    + city + "'. Use a Hotelbeds destination code — from a Hotelbeds catalog import "
                     + "(POST /api/static-data/import?provider=hotelbeds) — not a plain city name/number.");
         }
         Map<String, Object> body = baseRequest(request.arrivalDate(), request.departureDate(), request.rooms());
-        body.put("destination", Map.of("code", request.city().trim()));
+        body.put("destination", Map.of("code", city));
         return search(body, request.guestNationality(), request.arrivalDate(), request.departureDate());
     }
 

@@ -22,6 +22,7 @@ public record SearchResult(
     public record FoundHotel(
             String id,
             String name,
+            String city,
             String rating,
             String price,
             List<RoomDetail> roomDetails) {

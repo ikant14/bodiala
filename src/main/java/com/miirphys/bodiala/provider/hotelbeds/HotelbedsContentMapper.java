@@ -8,8 +8,6 @@ import com.miirphys.bodiala.staticdata.domain.HotelImage;
 import com.miirphys.bodiala.staticdata.domain.PropertyAmenity;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -22,7 +20,6 @@ import java.util.stream.Collectors;
 public final class HotelbedsContentMapper {
 
     private static final String IMAGE_BASE = "https://photos.hotelbeds.com/giata/bigger/";
-    private static final Pattern DIGITS = Pattern.compile("(\\d+)");
 
     /** Facility groups that aren't guest amenities: 20 = accommodation type, 30 = payment methods. */
     private static final Set<Integer> NON_AMENITY_GROUPS = Set.of(20, 30);
@@ -36,7 +33,7 @@ public final class HotelbedsContentMapper {
         hotel.setName(content(h.name()));
         hotel.setCityCode(h.destinationCode());
         hotel.setCountryCode(h.countryCode());
-        hotel.setRating(category(h.categoryCode()));
+        hotel.setRating(HotelbedsCategory.stars(h.categoryCode()));
         hotel.setHotelAddress(content(h.address()));
         hotel.setHotelPostalCode(h.postalCode());
         if (h.coordinates() != null) {
@@ -110,14 +107,5 @@ public final class HotelbedsContentMapper {
 
     private static String content(HotelContentResponse.Content c) {
         return c == null ? null : c.content();
-    }
-
-    /** Extract the leading number from a Hotelbeds category code, e.g. {@code "4EST"} → {@code 4}. */
-    private static Integer category(String categoryCode) {
-        if (categoryCode == null) {
-            return null;
-        }
-        Matcher m = DIGITS.matcher(categoryCode);
-        return m.find() ? Integer.valueOf(m.group(1)) : null;
     }
 }

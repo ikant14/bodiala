@@ -27,7 +27,7 @@ class HotelbedsSearchProviderValidationTest {
 
     private static DestinationSearchRequest request(String city, Integer adults) {
         return new DestinationSearchRequest(
-                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 3), "AE", city, "AE",
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 3), "AE", List.of(city), "AE",
                 List.of(), List.of(new RoomRequest("DBL", adults, 0, List.of())));
     }
 
