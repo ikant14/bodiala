@@ -67,6 +67,26 @@ class HotelbedsContentMapperTest {
     }
 
     @Test
+    void ordersGeneralViewsFirstSoTheCoverIsAPropertyShot() {
+        HotelContentResponse.Hotel base = sampleHotel();
+        HotelContentResponse.Hotel h = new HotelContentResponse.Hotel(base.code(), base.name(), base.description(),
+                base.countryCode(), base.destinationCode(), base.city(), base.categoryCode(), base.address(),
+                base.postalCode(), base.coordinates(),
+                List.of(new HotelContentResponse.Image("room1.jpg", "HAB", 1),
+                        new HotelContentResponse.Image("gen2.jpg", "GEN", 2),
+                        new HotelContentResponse.Image("pool1.jpg", "PIS", 1),
+                        new HotelContentResponse.Image("gen1.jpg", "GEN", 1)),
+                base.facilities());
+
+        assertThat(HotelbedsContentMapper.toImages(h)).extracting(HotelImage::getImage)
+                .containsExactly(
+                        "https://photos.hotelbeds.com/giata/bigger/gen1.jpg",   // GEN by order...
+                        "https://photos.hotelbeds.com/giata/bigger/gen2.jpg",
+                        "https://photos.hotelbeds.com/giata/bigger/room1.jpg",  // ...then the API's order
+                        "https://photos.hotelbeds.com/giata/bigger/pool1.jpg");
+    }
+
+    @Test
     void mapsImagesFacilitiesAndDerivesCountryCity() {
         HotelContentResponse.Hotel h = sampleHotel();
 

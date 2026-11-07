@@ -7,7 +7,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.miirphys.bodiala.provider.hotelbeds.dto.HotelContentResponse;
@@ -69,6 +71,28 @@ class HotelbedsContentServiceTest {
         verify(images).deleteByHotelCode(12345L);              // replace this hotel's images
         verify(images).saveAll(any());
         verify(amenities).save(any());                         // "Bar" facility
+    }
+
+    @Test
+    void batchFetchesAllCodesInOneCallAndCachesEachHotelReturned() {
+        HotelContentResponse.Hotel a = oneHotel(1067).hotels().get(0);
+        HotelContentResponse.Hotel b = oneHotel(3424).hotels().get(0);
+        when(client.get(anyString(), eq(HotelContentResponse.class)))
+                .thenReturn(new HotelContentResponse(List.of(a, b), 1, 2, 2)); // 9999 unknown to Hotelbeds
+        when(hotels.save(any(Hotel.class))).thenAnswer(i -> i.getArgument(0));
+
+        List<Hotel> cached = service(configured()).fetchAndCacheAll(List.of(1067L, 3424L, 9999L));
+
+        assertThat(cached).extracting(Hotel::getHotelCode).containsExactly(1067L, 3424L);
+        verify(client, times(1)).get(contains("codes=1067,3424,9999&from=1&to=3"), eq(HotelContentResponse.class));
+        verify(images).deleteByHotelCode(1067L);
+        verify(images).deleteByHotelCode(3424L);
+    }
+
+    @Test
+    void batchWithNoCodesMakesNoCall() {
+        assertThat(service(configured()).fetchAndCacheAll(List.of())).isEmpty();
+        verifyNoInteractions(client);
     }
 
     @Test

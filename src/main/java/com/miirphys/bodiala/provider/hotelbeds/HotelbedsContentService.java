@@ -6,7 +6,10 @@ import com.miirphys.bodiala.staticdata.domain.PropertyAmenity;
 import com.miirphys.bodiala.staticdata.repo.HotelImageRepository;
 import com.miirphys.bodiala.staticdata.repo.HotelRepository;
 import com.miirphys.bodiala.staticdata.repo.PropertyAmenityRepository;
+import java.util.Collection;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -55,19 +58,48 @@ public class HotelbedsContentService {
      */
     @Transactional
     public Hotel fetchAndCache(Long code) {
+        HotelContentResponse.Hotel content = fetch(List.of(code)).stream().findFirst().orElse(null);
+        if (content == null) {
+            throw new NoSuchElementException("Unknown Hotelbeds hotel " + code);
+        }
+        Hotel hotel = cache(content);
+        log.info("Cached Hotelbeds hotel {} ({}) on demand", code, hotel.getName());
+        return hotel;
+    }
+
+    /**
+     * Batch variant for a page of search results: fetch every given hotel in <em>one</em> Content-API
+     * call ({@code codes=a,b,c}) and cache each one returned. Codes Hotelbeds doesn't know are skipped.
+     */
+    @Transactional
+    public List<Hotel> fetchAndCacheAll(Collection<Long> codes) {
+        if (codes.isEmpty()) {
+            return List.of();
+        }
+        List<Hotel> cached = fetch(codes).stream().map(this::cache).toList();
+        log.info("Cached {} of {} requested Hotelbeds hotels on demand", cached.size(), codes.size());
+        return cached;
+    }
+
+    /** One signed {@code GET /hotels?codes=…} call; only hotels that carry a code come back. */
+    private List<HotelContentResponse.Hotel> fetch(Collection<Long> codes) {
         if (!properties.hasCredentials()) {
             throw new IllegalStateException(
                     "Hotelbeds credentials are not configured (hotelbeds.api-key / hotelbeds.secret).");
         }
         String path = "/hotel-content-api/1.0/hotels?fields=all&language=" + properties.getLanguage()
-                + "&codes=" + code + "&from=1&to=1";
+                + "&codes=" + codes.stream().map(String::valueOf).collect(Collectors.joining(","))
+                + "&from=1&to=" + codes.size();
         HotelContentResponse response = client.get(path, HotelContentResponse.class);
-        HotelContentResponse.Hotel content = (response == null || response.hotels() == null
-                || response.hotels().isEmpty()) ? null : response.hotels().get(0);
-        if (content == null || content.code() == null) {
-            throw new NoSuchElementException("Unknown Hotelbeds hotel " + code);
+        if (response == null || response.hotels() == null) {
+            return List.of();
         }
+        return response.hotels().stream().filter(h -> h.code() != null).toList();
+    }
 
+    /** Upsert one hotel plus its images (replaced) and amenities into the shared cache. */
+    private Hotel cache(HotelContentResponse.Hotel content) {
+        long code = content.code().longValue();
         Hotel hotel = hotelRepository.save(HotelbedsContentMapper.toHotel(content));
         hotelImageRepository.deleteByHotelCode(code);
         hotelImageRepository.saveAll(HotelbedsContentMapper.toImages(content));
@@ -75,7 +107,6 @@ public class HotelbedsContentService {
         if (amenity != null) {
             propertyAmenityRepository.save(amenity);
         }
-        log.info("Cached Hotelbeds hotel {} ({}) on demand", code, hotel.getName());
         return hotel;
     }
 }

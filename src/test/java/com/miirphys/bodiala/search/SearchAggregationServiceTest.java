@@ -2,6 +2,7 @@ package com.miirphys.bodiala.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -14,8 +15,11 @@ import com.miirphys.bodiala.provider.SearchProviderRegistry;
 import com.miirphys.bodiala.provider.error.UpstreamApiException;
 import com.miirphys.bodiala.provider.model.CombinedSearchResult;
 import com.miirphys.bodiala.provider.model.SearchResult;
+import com.miirphys.bodiala.staticdata.domain.HotelImage;
+import com.miirphys.bodiala.staticdata.repo.HotelImageRepository;
 import com.miirphys.bodiala.staticdata.repo.HotelRepository;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +34,7 @@ class SearchAggregationServiceTest {
 
     private final SearchProvider hotelbeds = mock(SearchProvider.class);
     private final HotelRepository hotelRepo = mock(HotelRepository.class);
+    private final HotelImageRepository imageRepo = mock(HotelImageRepository.class);
 
     @BeforeEach
     void stubId() {
@@ -37,7 +42,8 @@ class SearchAggregationServiceTest {
     }
 
     private SearchAggregationService service() {
-        return new SearchAggregationService(new SearchProviderRegistry(List.of(hotelbeds), "hotelbeds"), hotelRepo);
+        return new SearchAggregationService(new SearchProviderRegistry(List.of(hotelbeds), "hotelbeds"),
+                hotelRepo, imageRepo);
     }
 
     private static DestinationSearchRequest request() {
@@ -202,6 +208,37 @@ class SearchAggregationServiceTest {
         assertThatThrownBy(() -> service().searchByDestination(request(List.of(), List.of()), null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("at least one city");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void attachesCachedCoverImageAndLeavesUncachedHotelsWithout() {
+        when(hotelbeds.isConfigured()).thenReturn(true);
+        SearchResult result = new SearchResult("", "EUR", "ES", "2026-08-01", "2026-08-03", List.of(
+                new SearchResult.FoundHotel("1067", "Palma Grand", "PMI", "4", "100", List.of()),
+                new SearchResult.FoundHotel("9999", "Not Cached", "PMI", "3", "80", List.of())), null);
+        when(hotelbeds.searchByDestination(any())).thenReturn(result);
+        when(imageRepo.findCoverImages(any())).thenReturn(List.of(new HotelImage(1067L, "https://img/1067.jpg")));
+
+        CombinedSearchResult combined = service().searchByDestination(request(), null);
+
+        assertThat(combined.hotels()).extracting(CombinedSearchResult.Hotel::id, CombinedSearchResult.Hotel::image)
+                .containsExactly(tuple("1067", "https://img/1067.jpg"), tuple("9999", null));
+        // One lookup for the whole result, keyed by the numeric hotel codes.
+        ArgumentCaptor<Collection<Long>> codes = ArgumentCaptor.forClass(Collection.class);
+        verify(imageRepo).findCoverImages(codes.capture());
+        assertThat(codes.getValue()).containsExactlyInAnyOrder(1067L, 9999L);
+    }
+
+    @Test
+    void skipsTheImageLookupWhenNoHotelIdIsACacheCode() {
+        when(hotelbeds.isConfigured()).thenReturn(true);
+        when(hotelbeds.searchByDestination(any())).thenReturn(resultWith("", "EUR", "Palma Grand"));
+
+        CombinedSearchResult combined = service().searchByDestination(request(), null);
+
+        assertThat(combined.hotels()).singleElement().satisfies(h -> assertThat(h.image()).isNull());
+        verify(imageRepo, never()).findCoverImages(any());
     }
 
     @Test

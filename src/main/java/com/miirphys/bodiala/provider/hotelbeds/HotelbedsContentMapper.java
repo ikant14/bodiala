@@ -6,6 +6,7 @@ import com.miirphys.bodiala.staticdata.domain.Country;
 import com.miirphys.bodiala.staticdata.domain.Hotel;
 import com.miirphys.bodiala.staticdata.domain.HotelImage;
 import com.miirphys.bodiala.staticdata.domain.PropertyAmenity;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,6 +21,19 @@ import java.util.stream.Collectors;
 public final class HotelbedsContentMapper {
 
     private static final String IMAGE_BASE = "https://photos.hotelbeds.com/giata/bigger/";
+
+    /** Hotelbeds image type for general views of the property — the best cover photo. */
+    private static final String GENERAL_VIEW = "GEN";
+
+    /**
+     * Stored order is display order, and the first image is the hotel's cover on search results:
+     * general views lead, in Hotelbeds' own {@code order}; every other image keeps the API's order
+     * (the stream sort is stable).
+     */
+    private static final Comparator<HotelContentResponse.Image> COVER_FIRST = Comparator
+            .comparing((HotelContentResponse.Image i) -> !GENERAL_VIEW.equals(i.imageTypeCode()))
+            .thenComparing(i -> GENERAL_VIEW.equals(i.imageTypeCode()) ? i.order() : null,
+                    Comparator.nullsLast(Comparator.naturalOrder()));
 
     /** Facility groups that aren't guest amenities: 20 = accommodation type, 30 = payment methods. */
     private static final Set<Integer> NON_AMENITY_GROUPS = Set.of(20, 30);
@@ -51,6 +65,7 @@ public final class HotelbedsContentMapper {
         long code = h.code().longValue();
         return h.images().stream()
                 .filter(i -> i.path() != null && !i.path().isBlank())
+                .sorted(COVER_FIRST)
                 .map(i -> new HotelImage(code, IMAGE_BASE + i.path()))
                 .toList();
     }

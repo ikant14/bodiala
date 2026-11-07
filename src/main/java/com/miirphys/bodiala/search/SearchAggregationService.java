@@ -5,10 +5,14 @@ import com.miirphys.bodiala.provider.SearchProvider;
 import com.miirphys.bodiala.provider.SearchProviderRegistry;
 import com.miirphys.bodiala.provider.model.CombinedSearchResult;
 import com.miirphys.bodiala.provider.model.SearchResult;
+import com.miirphys.bodiala.staticdata.domain.HotelImage;
+import com.miirphys.bodiala.staticdata.repo.HotelImageRepository;
 import com.miirphys.bodiala.staticdata.repo.HotelRepository;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -41,10 +45,13 @@ public class SearchAggregationService {
 
     private final SearchProviderRegistry providers;
     private final HotelRepository hotels;
+    private final HotelImageRepository images;
 
-    public SearchAggregationService(SearchProviderRegistry providers, HotelRepository hotels) {
+    public SearchAggregationService(SearchProviderRegistry providers, HotelRepository hotels,
+                                    HotelImageRepository images) {
         this.providers = providers;
         this.hotels = hotels;
+        this.images = images;
     }
 
     /**
@@ -145,7 +152,7 @@ public class SearchAggregationService {
         return new CombinedSearchResult(guestNationality,
                 arrival == null ? null : arrival.toString(),
                 departure == null ? null : departure.toString(),
-                hotels, statuses);
+                withCoverImages(hotels), statuses);
     }
 
     private static List<CombinedSearchResult.Hotel> flatten(String provider, SearchResult result,
@@ -156,8 +163,40 @@ public class SearchAggregationService {
         return result.hotels().stream()
                 .filter(h -> ratingMatches(h.rating(), wantedStars))
                 .map(h -> new CombinedSearchResult.Hotel(provider, result.searchSessionId(), result.currency(),
-                        h.id(), h.name(), h.city(), h.rating(), h.price(), h.roomDetails()))
+                        h.id(), h.name(), h.city(), h.rating(), h.price(), h.roomDetails(), null))
                 .toList();
+    }
+
+    /**
+     * Supplier availability carries no photos, so each hotel's cover image comes from the static-data
+     * cache — one query for the whole result. Hotels the cache doesn't hold (availability returns more
+     * than the bounded catalog import) keep a null image.
+     */
+    private List<CombinedSearchResult.Hotel> withCoverImages(List<CombinedSearchResult.Hotel> found) {
+        Set<Long> codes = found.stream()
+                .map(h -> hotelCode(h.id()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (codes.isEmpty()) {
+            return found;
+        }
+        Map<Long, String> covers = images.findCoverImages(codes).stream()
+                .collect(Collectors.toMap(HotelImage::getHotelCode, HotelImage::getImage, (a, b) -> a));
+        return found.stream()
+                .map(h -> h.withImage(covers.get(hotelCode(h.id()))))
+                .toList();
+    }
+
+    /** The cache key for a supplier hotel id (Hotelbeds codes are numeric); null if it isn't one. */
+    private static Long hotelCode(String id) {
+        if (id == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(id.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /** An empty (but well-formed) result used when a multi-city search resolves to no cached hotels. */

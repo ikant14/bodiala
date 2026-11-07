@@ -3,6 +3,7 @@ package com.miirphys.bodiala.staticdata.web;
 import com.miirphys.bodiala.provider.CatalogImporterRegistry;
 import com.miirphys.bodiala.provider.ProviderId;
 import com.miirphys.bodiala.provider.hotelbeds.HotelbedsContentService;
+import com.miirphys.bodiala.staticdata.HotelCoverService;
 import com.miirphys.bodiala.staticdata.ImportResult;
 import com.miirphys.bodiala.staticdata.domain.City;
 import com.miirphys.bodiala.staticdata.domain.Country;
@@ -18,6 +19,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +42,7 @@ public class StaticDataController {
 
     private final CatalogImporterRegistry catalogImporters;
     private final HotelbedsContentService hotelbedsContentService;
+    private final HotelCoverService hotelCoverService;
     private final CountryRepository countryRepository;
     private final CityRepository cityRepository;
     private final HotelRepository hotelRepository;
@@ -49,6 +52,7 @@ public class StaticDataController {
 
     public StaticDataController(CatalogImporterRegistry catalogImporters,
                                 HotelbedsContentService hotelbedsContentService,
+                                HotelCoverService hotelCoverService,
                                 CountryRepository countryRepository,
                                 CityRepository cityRepository,
                                 HotelRepository hotelRepository,
@@ -57,6 +61,7 @@ public class StaticDataController {
                                 RoomAmenityRepository roomAmenityRepository) {
         this.catalogImporters = catalogImporters;
         this.hotelbedsContentService = hotelbedsContentService;
+        this.hotelCoverService = hotelCoverService;
         this.countryRepository = countryRepository;
         this.cityRepository = cityRepository;
         this.hotelRepository = hotelRepository;
@@ -116,7 +121,7 @@ public class StaticDataController {
                            @RequestParam(required = false) ProviderId provider) {
         Hotel hotel = hotelRepository.findById(hotelCode)
                 .orElseGet(() -> fetchLive(hotelCode, provider));
-        List<String> images = hotelImageRepository.findByHotelCode(hotelCode).stream()
+        List<String> images = hotelImageRepository.findByHotelCodeOrderByIdAsc(hotelCode).stream()
                 .map(HotelImage::getImage)
                 .toList();
         String propertyAmenities = propertyAmenityRepository.findById(hotelCode)
@@ -126,6 +131,19 @@ public class StaticDataController {
                 .map(a -> a.getRoomAmenities())
                 .orElse(null);
         return new HotelView(hotel, images, propertyAmenities, roomAmenities);
+    }
+
+    @Operation(summary = "Cover photo per hotel (for search-result cards)",
+            description = "Maps each hotel code to its cover photo URL; hotels without one are omitted. Reads the "
+                    + "cache; with ?provider=hotelbeds, hotels not cached yet are fetched live in ONE Content-API "
+                    + "call (one quota request) and cached. At most 100 codes.")
+    @GetMapping("/hotel-covers")
+    public Map<Long, String> hotelCovers(
+            @Parameter(description = "Hotel codes, comma-separated, e.g. 1067,3424")
+            @RequestParam List<Long> codes,
+            @Parameter(description = "Fetch uncached hotels live from this supplier (currently only hotelbeds).")
+            @RequestParam(required = false) ProviderId provider) {
+        return hotelCoverService.covers(codes, provider);
     }
 
     /** Cache miss: fetch the hotel live from the supplier (Hotelbeds only for now), else 404. */

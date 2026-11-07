@@ -25,6 +25,8 @@ public record CombinedSearchResult(
      * One availability result, tagged with the supplier (and its session/currency) that produced it.
      * {@code city} is the supplier destination code the hotel belongs to — set so a result spanning
      * several cities (multi-city search) can label each hotel and route its booking to the right city.
+     * {@code image} is the hotel's cover photo URL from the static-data cache (supplier availability
+     * carries no photos), or null when the hotel isn't cached — the UI then shows a placeholder.
      */
     public record Hotel(
             String provider,
@@ -35,7 +37,12 @@ public record CombinedSearchResult(
             String city,
             String rating,
             String price,
-            List<SearchResult.RoomDetail> roomDetails) {
+            List<SearchResult.RoomDetail> roomDetails,
+            String image) {
+
+        public Hotel withImage(String image) {
+            return new Hotel(provider, searchSessionId, currency, id, name, city, rating, price, roomDetails, image);
+        }
     }
 
     /** Per-supplier outcome for one aggregated search. */
