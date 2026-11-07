@@ -76,7 +76,7 @@ public class HotelbedsJsonClient {
     private void fail(HttpRequest request, ClientHttpResponse response) throws IOException {
         int code = response.getStatusCode().value();
         String body = new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8);
-        throw new UpstreamApiException("Hotelbeds " + code + ": " + extractMessage(body));
+        throw new UpstreamApiException(code, "Hotelbeds " + code + ": " + extractMessage(body));
     }
 
     /** Pull a human message out of either Hotelbeds error shape (nested {@code error.message} or flat {@code error}). */

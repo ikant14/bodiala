@@ -1,5 +1,6 @@
 package com.miirphys.bodiala.web;
 
+import com.miirphys.bodiala.provider.error.BookingNotCancellableException;
 import com.miirphys.bodiala.provider.error.UpstreamApiException;
 import com.miirphys.bodiala.provider.error.UpstreamTransportException;
 import java.util.NoSuchElementException;
@@ -48,6 +49,12 @@ public class ApiExceptionHandler {
     @ExceptionHandler(UnsupportedOperationException.class)
     public ProblemDetail notImplemented(UnsupportedOperationException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_IMPLEMENTED, e.getMessage());
+    }
+
+    /** Supplier refused a cancellation because of the booking's state on its side → 409. */
+    @ExceptionHandler(BookingNotCancellableException.class)
+    public ProblemDetail notCancellable(BookingNotCancellableException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     }
 
     /** Supplier returned an error body (Hotelbeds error JSON) → 502. */

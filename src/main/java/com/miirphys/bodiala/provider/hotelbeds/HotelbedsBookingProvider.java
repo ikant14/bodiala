@@ -8,6 +8,7 @@ import com.miirphys.bodiala.booking.HotelBookingRepository;
 import com.miirphys.bodiala.booking.PrebookRequest;
 import com.miirphys.bodiala.provider.BookingProvider;
 import com.miirphys.bodiala.provider.ProviderId;
+import com.miirphys.bodiala.provider.error.BookingNotCancellableException;
 import com.miirphys.bodiala.provider.error.UpstreamApiException;
 import com.miirphys.bodiala.provider.hotelbeds.dto.BookingResponse;
 import com.miirphys.bodiala.provider.hotelbeds.dto.CheckRateResponse;
@@ -146,10 +147,21 @@ public class HotelbedsBookingProvider implements BookingProvider {
     public CancellationResult cancel(String bookingId) {
         requireCredentials();
         HotelBooking stored = getStored(bookingId);
+        if ("Cancelled".equalsIgnoreCase(stored.getStatus())) {
+            // Already cancelled here: answer from the stored row instead of asking Hotelbeds again
+            // (which spends quota and answers a repeat cancel with an error).
+            return new CancellationResult(stored.getBookingId(), stored.getBookingCode(), "CANCELLED",
+                    stored.getCancellationCharges(), stored.getCurrency());
+        }
 
-        BookingResponse response = client.delete(
-                "/hotel-api/1.0/bookings/" + stored.getBookingId() + "?cancellationFlag=CANCELLATION",
-                BookingResponse.class);
+        BookingResponse response;
+        try {
+            response = client.delete(
+                    "/hotel-api/1.0/bookings/" + stored.getBookingId() + "?cancellationFlag=CANCELLATION",
+                    BookingResponse.class);
+        } catch (UpstreamApiException e) {
+            throw cancellationRefusal(stored.getBookingId(), e);
+        }
         BookingResponse.Booking b = response == null ? null : response.booking();
         String status = b == null ? null : b.status();
         String charges = (b != null && b.hotel() != null && b.hotel().cancellationAmount() != null)
@@ -163,6 +175,25 @@ public class HotelbedsBookingProvider implements BookingProvider {
         }
         return new CancellationResult(stored.getBookingId(), stored.getBookingCode(),
                 status, charges, stored.getCurrency());
+    }
+
+    /**
+     * Hotelbeds refusing a cancellation is about the booking, not an outage. 404: this API key can't
+     * see the booking (it was made with another key, or against the stub). 410: Hotelbeds couldn't
+     * cancel it right now and points to its customer service (CRC). The stored row stays as it is. Any
+     * other error is passed on unchanged (→ 502).
+     */
+    private static RuntimeException cancellationRefusal(String reference, UpstreamApiException e) {
+        return switch (e.upstreamStatus()) {
+            case 404 -> new BookingNotCancellableException("Hotelbeds has no booking " + reference
+                    + " for the current API key. It was probably made with another key or against the stub,"
+                    + " so it can't be cancelled from here.", e);
+            // Seen to be temporary: the same booking cancelled fine a minute after a 410.
+            case 410 -> new BookingNotCancellableException("Hotelbeds couldn't cancel booking " + reference
+                    + " just now (it says to call its customer service, CRC). This can be temporary: try again"
+                    + " in a few minutes, and contact Hotelbeds if it keeps failing.", e);
+            default -> e;
+        };
     }
 
     @Override
