@@ -3,7 +3,7 @@
 # prints a secret value.
 #
 #   bash C:/Users/user/IdeaProjects/bodiala/scripts/check-secrets.sh <repo-path> [<range>]
-#   e.g. bash .../check-secrets.sh . origin/develop..HEAD
+#   e.g. bash .../check-secrets.sh . origin/main..HEAD
 #
 # Exit 1 (do not push) when:
 #   - a real value from bodiala's git-ignored .env (any *KEY*, *SECRET*, *PASSWORD*, *TOKEN*,
@@ -13,7 +13,7 @@
 # placeholders such as stub-key or test-only passwords are fine, real values are not.
 set -u
 repo=${1:?usage: check-secrets.sh <repo-path> [<range>]}
-range=${2:-origin/develop..HEAD}
+range=${2:-origin/main..HEAD}
 envfile="C:/Users/user/IdeaProjects/bodiala/.env"
 tmp=$(mktemp)
 trap 'rm -f "$tmp"' EXIT
