@@ -5,7 +5,8 @@ import com.miirphys.bodiala.booking.HotelBooking;
 import com.miirphys.bodiala.booking.PrebookRequest;
 import com.miirphys.bodiala.provider.model.CancellationResult;
 import com.miirphys.bodiala.provider.model.RateCheckResult;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * The booking chain, abstracted over the supplier. All implementations are loaded and indexed by
@@ -17,7 +18,7 @@ import java.util.List;
  * {@link RateCheckResult}, {@link #book} → the persisted {@link HotelBooking}, {@link #cancel} →
  * {@link CancellationResult}. {@link #book}/{@link #cancel} implementations MUST NOT be
  * {@code @Transactional} (the supplier HTTP call must not run inside a DB transaction). The stored
- * booking carries its {@code provider}, so {@link #listBookings()}/{@link #getStored(String)} read
+ * booking carries its {@code provider}, so {@link #listBookings(Pageable)}/{@link #getStored(String)} read
  * the shared table regardless of who created the row.
  */
 public interface BookingProvider {
@@ -32,7 +33,8 @@ public interface BookingProvider {
 
     CancellationResult cancel(String bookingId);
 
-    List<HotelBooking> listBookings();
+    /** One page of every stored booking (the staff-only admin list). */
+    Page<HotelBooking> listBookings(Pageable pageable);
 
     HotelBooking getStored(String bookingId);
 }

@@ -23,6 +23,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // Spring Security: deny-by-default route matrix + HTTP Basic for the staff user (SEC-1, see security/)
+    implementation 'org.springframework.boot:spring-boot-starter-security'
 
     // Swagger UI / OpenAPI docs. 3.0.x is the line that supports Spring Boot 4 / Spring Framework 7.
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'

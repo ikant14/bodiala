@@ -25,6 +25,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 /**
@@ -197,8 +199,8 @@ public class HotelbedsBookingProvider implements BookingProvider {
     }
 
     @Override
-    public List<HotelBooking> listBookings() {
-        return bookings.findAll();
+    public Page<HotelBooking> listBookings(Pageable pageable) {
+        return bookings.findAll(pageable);
     }
 
     @Override
