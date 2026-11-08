@@ -74,6 +74,12 @@ All agents use the user's Jira account, so the claim comment, not the assignee f
   Set-Location "C:\Users\user\IdeaProjects\wt\$key\bodiala-web"; npm.cmd ci      # worktrees have no node_modules
   ```
   Only create a worktree for a repo your task actually changes.
+
+  **If the app made your worktree for you** (under `bodiala\.claude\worktrees\`, on a `claude/…` branch), it was cut from `main`, not `develop`. Create your ticket branch from `develop` explicitly, before you change anything:
+  ```powershell
+  git switch -C feature/KAN-84-adopt-flyway develop
+  ```
+  Never check out `develop` itself (only detached, with `git switch --detach develop`), because the fast-forward in §6 needs it free.
 - **hotelbeds-stub is not under git.** It has no branches and no worktrees:
   - Only an agent whose task needs a stub change may edit it, and only one agent at a time. Say "editing hotelbeds-stub" in your claim comment.
   - Before you start, check that no In Progress claim says the same.
