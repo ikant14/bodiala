@@ -1,5 +1,7 @@
 # bodiala — project guide (read me first)
 
+> **Working alongside other agents?** Follow [AGENTS.md](AGENTS.md). It covers picking and claiming a Jira task, your own worktree and branch, per-agent ports, database and test schema, and how to hand back.
+
 Hotelbeds (APItude) hotel integration. **Three sibling repos** under `C:\Users\user\IdeaProjects\`:
 
 | Repo | What it is | Stack | Port |
