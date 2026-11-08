@@ -37,6 +37,10 @@ dependencies {
     // PostgreSQL driver — the app's only datasource (runs in Docker, see docker-compose.yml); version managed by Spring Boot
     runtimeOnly 'org.postgresql:postgresql'
 
+    // Flyway owns the schema (src/main/resources/db/migration); Hibernate only validates it. Versions managed by Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
