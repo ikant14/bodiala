@@ -34,6 +34,13 @@ Jira project **KAN** (<https://iraklikantar.atlassian.net>) is the source of tru
   - **Links to PAY-2 and PAY-6**: these only matter once online payment is added. Ignore them (see "Working order" in `docs/backlog.md`).
 - **Decisions (DEC-*) belong to the user.** Never move or close one.
 - **Prefer a different lane** from the tasks already **In Progress** (§7), so that agents don't edit the same files.
+- **Pick your model per task** (rules: "Model choice" in `CLAUDE.md`). Most lane work runs on the project default, Sonnet with Opus planning. These need Opus for the execution as well:
+  - lane A from BOOK-1 onwards (booking state, idempotency);
+  - SEC-1 and SEC-2;
+  - any Effort-L task;
+  - anything that changes the backend–frontend JSON contract.
+
+  If a Sonnet run gets stuck, ask the `opus-advisor` subagent before retrying.
 - **Useful JQL:**
   - `project = KAN AND sprint in openSprints() AND status = "To Do" ORDER BY Rank`
   - `project = KAN AND parent in (KAN-151, KAN-153) AND status = "To Do" ORDER BY Rank`

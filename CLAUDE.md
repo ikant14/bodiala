@@ -2,6 +2,24 @@
 
 > **Working alongside other agents?** Follow [AGENTS.md](AGENTS.md). It covers picking and claiming a Jira task, your own worktree and branch, per-agent ports, database and test schema, and how to hand back.
 
+## Model choice
+
+The project default is **`opusplan`**, set in `.claude/settings.json` in all three repos. It uses **Opus while planning (plan mode) and Sonnet while executing.** This file can't switch models itself; these are the rules for when to change.
+
+- **Routine work: just do it (Sonnet).** UI tweaks, CRUD and wiring, tests for existing behaviour, docs, Jira updates, mechanical refactors.
+- **Design decisions or many files: plan first (Opus).** Start in plan mode (Shift+Tab in the CLI, or the mode menu in the desktop app). Opus writes the plan; once you approve it, Sonnet carries it out.
+- **Risk in the details: Opus for the execution too.** Switch with `/model opus` or the model picker. This applies to:
+  - booking state, money, idempotency and reconciliation (BOOK-1, 2, 4, 5, 8, 9, 10; PAY-*);
+  - auth and tokens (SEC-1, SEC-2);
+  - concurrency;
+  - changes to the JSON contract between backend and frontend;
+  - debugging where the cause is unclear.
+- **Escalate instead of grinding.** On Sonnet, stop retrying when a fix has failed twice, the root cause is unclear, or the task turns out to need a design decision. Ask the **`opus-advisor`** subagent (`.claude/agents/opus-advisor.md`: Opus, read-only, returns a plan or diagnosis), or tell the user to switch to Opus.
+- **Subagents: pick the model for each Agent call.**
+  - `haiku` for searches and lookups.
+  - `sonnet` for routine implementation and mechanical bulk work, such as Jira edits.
+  - `opus` (or `opus-advisor`) for design reviews, hard debugging, and security or money-safety reviews.
+
 Hotelbeds (APItude) hotel integration. **Three sibling repos** under `C:\Users\user\IdeaProjects\`:
 
 | Repo | What it is | Stack | Port |
