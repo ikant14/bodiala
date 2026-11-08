@@ -102,6 +102,25 @@ class RouteMatrixTest {
         assertThat(response.headers().firstValue("Set-Cookie")).isEmpty();
     }
 
+    @Test
+    void securityErrorsHaveTheSameShapeAsApiExceptionHandlerErrors() throws Exception {
+        JsonNode notFound = json(call("GET", "/api/bookings/no-such-booking", null)); // ApiExceptionHandler
+        JsonNode unauthorized = json(call("GET", "/api/bookings", null));
+        JsonNode forbidden = json(call("GET", "/api/not-a-route", STAFF));
+
+        assertThat(unauthorized.propertyNames()).containsExactlyInAnyOrderElementsOf(notFound.propertyNames());
+        assertThat(forbidden.propertyNames()).containsExactlyInAnyOrderElementsOf(notFound.propertyNames());
+        assertThat(unauthorized.path("instance").asString()).isEqualTo("/api/bookings");
+        assertThat(forbidden.path("status").asInt()).isEqualTo(403);
+    }
+
+    @Test
+    void aBadBasicHeaderGets401EvenOnAPublicRoute() throws Exception {
+        // Documented in SecurityConfig: the Basic filter rejects bad credentials before the matrix runs.
+        assertThat(call("GET", "/api/static-data/countries", WRONG_PASSWORD).statusCode()).isEqualTo(401);
+        assertThat(call("GET", "/api/static-data/countries", null).statusCode()).isEqualTo(200);
+    }
+
     // --- staff routes ----------------------------------------------------------------
 
     @Test

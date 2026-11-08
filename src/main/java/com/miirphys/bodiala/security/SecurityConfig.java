@@ -1,14 +1,17 @@
 package com.miirphys.bodiala.security;
 
 import jakarta.servlet.DispatcherType;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,6 +22,7 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Stateless, deny-by-default security for the whole API (SEC-1).
@@ -31,7 +35,13 @@ import org.springframework.security.web.access.AccessDeniedHandler;
  *       shows its login prompt and never caches staff credentials that a cross-site form could reuse.
  *       Callers (Swagger UI, curl, a future agent screen) send the {@code Authorization} header
  *       themselves.</li>
- *   <li>401/403 bodies are RFC 7807 problem JSON, like the rest of the API's errors.</li>
+ *   <li>401/403 bodies are a Spring {@link ProblemDetail} written with the app's JSON mapper, so they
+ *       have the same RFC 7807 shape as {@code ApiExceptionHandler}'s errors.</li>
+ *   <li><b>A wrong or stale {@code Authorization: Basic} header gets 401 even on a PUBLIC route</b>
+ *       (e.g. after a mistyped Authorize in Swagger UI): the Basic filter rejects bad credentials before
+ *       the route matrix is consulted. Drop the header (Swagger: Logout) and the public route works
+ *       again. This is Spring Security's normal behaviour and is kept on purpose: a bad credential is
+ *       never silently downgraded to anonymous.</li>
  * </ul>
  */
 @Configuration
@@ -40,11 +50,11 @@ public class SecurityConfig {
     private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Bean
-    SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
+    SecurityFilterChain apiSecurity(HttpSecurity http, JsonMapper json) throws Exception {
         AuthenticationEntryPoint unauthorized = (request, response, e) ->
-                writeProblem(response, HttpStatus.UNAUTHORIZED, "Authentication required.");
+                writeProblem(json, request, response, HttpStatus.UNAUTHORIZED, "Authentication required.");
         AccessDeniedHandler forbidden = (request, response, e) ->
-                writeProblem(response, HttpStatus.FORBIDDEN, "Not allowed.");
+                writeProblem(json, request, response, HttpStatus.FORBIDDEN, "Not allowed.");
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -86,12 +96,16 @@ public class SecurityConfig {
         return users;
     }
 
-    private static void writeProblem(HttpServletResponse response, HttpStatus status, String detail)
-            throws IOException {
+    /**
+     * Writes the same body an {@code @ExceptionHandler} returning a {@link ProblemDetail} would: Spring MVC
+     * fills in {@code instance} with the request path, so this does too.
+     */
+    private static void writeProblem(JsonMapper json, HttpServletRequest request, HttpServletResponse response,
+                                     HttpStatus status, String detail) throws IOException {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setInstance(URI.create(request.getRequestURI()));
         response.setStatus(status.value());
-        response.setContentType("application/problem+json");
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write("{\"type\":\"about:blank\",\"title\":\"" + status.getReasonPhrase()
-                + "\",\"status\":" + status.value() + ",\"detail\":\"" + detail + "\"}");
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        json.writeValue(response.getOutputStream(), problem);
     }
 }
