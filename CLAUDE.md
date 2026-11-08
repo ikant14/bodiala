@@ -91,10 +91,10 @@ Provider-specific code lives under **`provider.<supplier>`** (currently only `pr
 ## Gotchas / conventions (bitten by these — keep them in mind)
 
 - **Branch per Jira ticket.** Name it `feature/{ticket-id}-{short-summary}` (e.g. `feature/KAN-84-adopt-flyway`), or `bugfix/{ticket-id}-{short-summary}` when the ticket fixes behaviour that is wrong today. Use the same name in both repos when a ticket spans them. Details: [AGENTS.md](AGENTS.md) §3.
-- **Git flow: rebase on `develop`, open a PR, the user squash-merges.**
-  - Branch from `develop`, and keep up to date with `git rebase origin/develop` (never merge `develop` in).
-  - Before every push, run `scripts/check-secrets.sh` (exit 1 means don't push). Then push the branch and open a PR against `develop`, titled `KAN-84: <ticket title>`.
-  - The user lands each PR as one squashed commit on `develop`: linear history, never a merge commit. Agents don't merge or push `develop`.
+- **Git flow: rebase on `main`, open a PR, the user squash-merges.**
+  - Branch from `origin/main`, and keep up to date with `git rebase origin/main` (never merge `main` in). The old `develop` branch is no longer used.
+  - Before every push, run `scripts/check-secrets.sh` (exit 1 means don't push). Then push the branch and open a PR against `main`, titled `KAN-84: <ticket title>`.
+  - The user lands each PR as one squashed commit on `main`: linear history, never a merge commit. Agents don't merge or push `main`.
 
   Exact commands: [AGENTS.md](AGENTS.md) §6.
 - **The API/web layer is provider-neutral** — search/prebook/cancel return `provider.model` records (+ the aggregated `CombinedSearchResult`) that serialize to the exact JSON the frontend reads. Keep it that way so a second supplier can slot in without a frontend change.
