@@ -89,6 +89,13 @@ Provider-specific code lives under **`provider.<supplier>`** (currently only `pr
 
 ## Gotchas / conventions (bitten by these — keep them in mind)
 
+- **Branch per Jira ticket.** Name it `feature/{ticket-id}-{short-summary}` (e.g. `feature/KAN-84-adopt-flyway`), or `bugfix/{ticket-id}-{short-summary}` when the ticket fixes behaviour that is wrong today. Use the same name in both repos when a ticket spans them. Details: [AGENTS.md](AGENTS.md) §3.
+- **Git flow: rebase on `develop`, squash, fast-forward.**
+  - Branch from `develop`, and keep up to date with `git rebase develop` (never merge `develop` in).
+  - When the ticket is done, squash it to one commit, `KAN-84: <ticket title>`, and fast-forward `develop` to it (`merge --ff-only`). `develop` never gets merge commits or direct commits.
+  - Push only when asked.
+
+  Exact commands: [AGENTS.md](AGENTS.md) §6.
 - **The API/web layer is provider-neutral** — search/prebook/cancel return `provider.model` records (+ the aggregated `CombinedSearchResult`) that serialize to the exact JSON the frontend reads. Keep it that way so a second supplier can slot in without a frontend change.
 - **Provider selection is per-request.** The adapters are plain `@Component`s (no `@ConditionalOnProperty`), indexed by a `*Registry`; a request selects one via the `?provider=` **enum** query param (case-insensitive via `ProviderIdConverter`), and `hotel.provider` (default `hotelbeds`) sets the default when omitted. Booking-keyed ops route by the stored `HotelBooking.provider` column (null/blank ⇒ `HOTELBEDS`). Tests: `ProviderWiringTest` (hotelbeds loaded + default) + `ProviderSelectionApiTest` (end-to-end `?provider=` binding). *(With one supplier, `resolve(HOTELBEDS)` and the default coincide; the registry/aggregation machinery is retained for a future second provider.)*
 - **Hotelbeds `X-Signature` uses the host clock (unix seconds)** — clock skew → 401. Regenerate per request. `Accept-Encoding` is omitted so responses come back uncompressed (no manual gzip). Two error shapes: flat `{"error":"…"}` (gateway 401/403) vs nested `{"error":{code,message}}` (app) — both → `UpstreamApiException` → 502.

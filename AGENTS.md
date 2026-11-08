@@ -57,13 +57,18 @@ All agents use the user's Jira account, so the claim comment, not the assignee f
 ## 3. Work in your own worktree, on your own branch
 
 - **Never edit the main checkouts** (`C:\Users\user\IdeaProjects\bodiala` and `...\bodiala-web`). They belong to the user, and other agents branch from them.
-- **Branch name:** `kan-<number>-<short-slug>`, for example `kan-84-flyway`. When a task touches both repos, use the same branch name in each.
-- **Base branch:** `main`.
+- **Branch name:**
+  - `feature/{ticket-id}-{short-summary}`, for example `feature/KAN-84-adopt-flyway`.
+  - `bugfix/{ticket-id}-{short-summary}`, for example `bugfix/KAN-62-safe-error-messages`, when the ticket fixes behaviour that is wrong today.
 
-  > **Until `hotel-card-photos` is merged into `main`, branch from `hotel-card-photos`.** In both repos, `main` is still behind it: bodiala-web's `main` is only the initial commit. Ask the user if unsure.
+  The ticket ID is the Jira key, written as Jira shows it (`KAN-84`), so Jira links the branch to the issue. The summary is the gist of the ticket title in a few lowercase, hyphenated words. When a task touches both repos, use the same branch name in each.
+- **Base branch: `develop`.** Create your branch from the latest `develop`. Keep it current by **rebasing** onto `develop`; never merge `develop` into your branch. Work-in-progress commits are fine, because they are squashed at the end (§6). `develop` itself only ever moves by fast-forward; nobody commits to it directly.
+  ```powershell
+  git rebase develop      # in your worktree, whenever develop has moved
+  ```
 - **Create the worktrees.** If your harness creates a worktree for you, use that instead.
   ```powershell
-  $key = "kan-84"; $branch = "kan-84-flyway"; $base = "hotel-card-photos"   # or main, once merged
+  $key = "KAN-84"; $branch = "feature/KAN-84-adopt-flyway"; $base = "develop"
   git -C C:\Users\user\IdeaProjects\bodiala worktree add "C:\Users\user\IdeaProjects\wt\$key\bodiala" -b $branch $base
   git -C C:\Users\user\IdeaProjects\bodiala-web worktree add "C:\Users\user\IdeaProjects\wt\$key\bodiala-web" -b $branch $base
   Set-Location "C:\Users\user\IdeaProjects\wt\$key\bodiala-web"; npm.cmd ci      # worktrees have no node_modules
@@ -73,7 +78,7 @@ All agents use the user's Jira account, so the claim comment, not the assignee f
   - Only an agent whose task needs a stub change may edit it, and only one agent at a time. Say "editing hotelbeds-stub" in your claim comment.
   - Before you start, check that no In Progress claim says the same.
   - Everyone else only runs it (§4).
-- **Clean up** once the user has merged your branch: `git worktree remove <path>`, then delete the branch.
+- **Clean up** once your squashed commit is on `develop` (§6): `git worktree remove <path>`, then delete the branch.
 
 ## 4. Run the apps and tests in a slot
 
@@ -93,7 +98,7 @@ At most four agents run at once. Slot 0 and `dev.ps1` are the user's.
 
 ```powershell
 New-Item -ItemType Directory -Force C:\Users\user\IdeaProjects\.agent-slots | Out-Null
-New-Item -ItemType File C:\Users\user\IdeaProjects\.agent-slots\slot-2 -Value "KAN-84 kan-84-flyway" -ErrorAction Stop
+New-Item -ItemType File C:\Users\user\IdeaProjects\.agent-slots\slot-2 -Value "KAN-84 feature/KAN-84-adopt-flyway" -ErrorAction Stop
 ```
 
 **Run things in your slot.** Set `$slot` first:
@@ -133,7 +138,7 @@ Run the servers in the background, and stop them by the process IDs you started.
 - **Never kill a process you didn't start.** The "kill the port" tip in `CLAUDE.md` is for slot 0 only.
 - **Never call the real Hotelbeds API.** Its quota is 50 requests a day, shared by everyone. Use the stub. If the user explicitly asks for a live check, count your calls.
 - **Never copy, print or commit `.env` or any credential.** The stub profile needs none.
-- **Never commit to `main`, `hotel-card-photos` or another task's branch.** Never force-push a shared branch.
+- **Never commit directly to `develop` or `main`, or to another task's branch.** `develop` only moves by the fast-forward in §6. Rewrite only your own branch; if it has been pushed, update it with `--force-with-lease`, never plain `--force`.
 
 ## 5. Files that many tasks touch
 
@@ -154,13 +159,28 @@ Run the servers in the background, and stop them by the process IDs you started.
    - `gradlew test` is green in your own schema;
    - `npm.cmd run build` is green if you touched the frontend;
    - user-visible behaviour has been checked in your slot's running app.
-2. **Commit** on your task branch, with the Jira key in the subject line: `KAN-84: Adopt Flyway and validate the schema`. Rebase onto the latest base branch, then run the tests again.
-3. **Push and open a pull request only if the user asked for it in your session.** The user merges.
-4. **In Jira:**
+2. **Rebase onto the latest `develop`** (`git rebase develop`), then run the tests again.
+3. **In Jira:**
    - Comment with the branch name(s), what changed, the test results, any acceptance item not met, and any decision recommendation you relied on.
-   - Move the task to **In Review**. The user moves it to **Done** after merging.
+   - Move the task to **In Review**.
    - Don't edit the description; report checklist status in your comment.
-5. **Clean up:** stop your processes and delete your slot's lock file. Keep the worktree until your branch is merged.
+4. **Release your slot:** stop your processes and delete your slot's lock file. Keep the worktree.
+5. **Finish, once the user says the task is done:** squash it to one commit, then fast-forward `develop`. Do this in each repo the task changed.
+   ```powershell
+   # In your worktree, on your task branch:
+   git rebase develop                 # if develop moved, run the tests again afterwards
+   git reset --soft develop           # squash: all your changes stay staged on top of develop
+   git commit -F msg.txt              # subject "KAN-84: <ticket title>", then a body (what and why), then the Co-Authored-By line
+   # Fast-forward develop to that single commit:
+   git -C C:\Users\user\IdeaProjects\bodiala merge --ff-only feature/KAN-84-adopt-flyway   # if develop is checked out in the main checkout
+   git fetch . feature/KAN-84-adopt-flyway:develop                                        # if develop is not checked out anywhere
+   ```
+   - **If the fast-forward fails**, another task reached `develop` first. Rebase onto `develop` again, run the tests again, and retry.
+   - **Never use a merge commit**, and never fast-forward from a checkout that has uncommitted changes. If the main checkout isn't clean, stop and tell the user.
+   - **Afterwards:**
+     - comment the `develop` commit hash on the Jira task and move it to **Done**;
+     - remove the worktree (`git worktree remove <path>`) and delete the branch (`git branch -d <branch>`).
+   - **Push `develop`, or open a pull request, only when the user asks.**
 6. **If you are blocked** (a missing decision, or a clash with another agent's work):
    - say so in a comment on the issue;
    - move the task back to **To Do** if you can't continue;
