@@ -62,9 +62,9 @@ All agents use the user's Jira account, so the claim comment, not the assignee f
   - `bugfix/{ticket-id}-{short-summary}`, for example `bugfix/KAN-62-safe-error-messages`, when the ticket fixes behaviour that is wrong today.
 
   The ticket ID is the Jira key, written as Jira shows it (`KAN-84`), so Jira links the branch to the issue. The summary is the gist of the ticket title in a few lowercase, hyphenated words. When a task touches both repos, use the same branch name in each.
-- **Base branch: `develop`.** Create your branch from the latest `develop`. Keep it current by **rebasing** onto `develop`; never merge `develop` into your branch. Work-in-progress commits are fine, because they are squashed at the end (§6). `develop` itself only ever moves by fast-forward; nobody commits to it directly.
+- **Base branch: `develop`.** Create your branch from the latest `develop`. Keep it current by **rebasing** onto `develop`; never merge `develop` into your branch. Work-in-progress commits are fine, because each PR is squashed into one commit when the user lands it (§6). Nobody commits to `develop` directly.
   ```powershell
-  git rebase develop      # in your worktree, whenever develop has moved
+  git fetch origin; git rebase origin/develop      # in your worktree, whenever develop has moved
   ```
 - **Create the worktrees.** If your harness creates a worktree for you, use that instead.
   ```powershell
@@ -79,12 +79,12 @@ All agents use the user's Jira account, so the claim comment, not the assignee f
   ```powershell
   git switch -C feature/KAN-84-adopt-flyway develop
   ```
-  Never check out `develop` itself (only detached, with `git switch --detach develop`), because the fast-forward in §6 needs it free.
+  Never check out `develop` itself; use it only detached, with `git switch --detach develop`. Other worktrees need it free.
 - **hotelbeds-stub is not under git.** It has no branches and no worktrees:
   - Only an agent whose task needs a stub change may edit it, and only one agent at a time. Say "editing hotelbeds-stub" in your claim comment.
   - Before you start, check that no In Progress claim says the same.
   - Everyone else only runs it (§4).
-- **Clean up** once your squashed commit is on `develop` (§6): `git worktree remove <path>`, then delete the branch.
+- **Clean up** once the user has merged your PR (§6): `git worktree remove <path>`, then delete the branch.
 
 ## 4. Run the apps and tests in a slot
 
@@ -144,7 +144,8 @@ Run the servers in the background, and stop them by the process IDs you started.
 - **Never kill a process you didn't start.** The "kill the port" tip in `CLAUDE.md` is for slot 0 only.
 - **Never call the real Hotelbeds API.** Its quota is 50 requests a day, shared by everyone. Use the stub. If the user explicitly asks for a live check, count your calls.
 - **Never copy, print or commit `.env` or any credential.** The stub profile needs none.
-- **Never commit directly to `develop` or `main`, or to another task's branch.** `develop` only moves by the fast-forward in §6. Rewrite only your own branch; if it has been pushed, update it with `--force-with-lease`, never plain `--force`.
+- **Never commit or push to `develop` or `main`, or to another task's branch.** `develop` only moves when the user lands a PR (§6). Rewrite only your own branch; once it is pushed, update it with `--force-with-lease`, never plain `--force`.
+- **Never push without running the credential check (§6, step 3) first.**
 
 ## 5. Files that many tasks touch
 
@@ -165,29 +166,49 @@ Run the servers in the background, and stop them by the process IDs you started.
    - `gradlew test` is green in your own schema;
    - `npm.cmd run build` is green if you touched the frontend;
    - user-visible behaviour has been checked in your slot's running app.
-2. **Rebase onto the latest `develop`** (`git rebase develop`), then run the tests again.
-3. **In Jira:**
-   - Comment with the branch name(s), what changed, the test results, any acceptance item not met, and any decision recommendation you relied on.
+2. **Rebase onto the latest `develop`.** `git fetch origin` first, then `git rebase origin/develop`. Run the tests again afterwards.
+3. **Check for credentials before every push.** Do this in each repo you will push:
+   ```powershell
+   bash C:/Users/user/IdeaProjects/bodiala/scripts/check-secrets.sh . origin/develop..HEAD
+   ```
+   - **Exit 1 means do not push.** A real `.env` value, or a forbidden file (`.env`, keys, keystores, database files), is in your commits. Remove it from the commits themselves, not just in a later commit: rebase and edit, or reset and recommit. Run the check again.
+   - **WARNING lines** need your judgement. Placeholders (`stub-key`) and test-only values (`test-staff-password`) are fine. Anything that could be a real credential is not, so ask the user.
+   - Never print or paste a secret value into a commit, a PR, Jira or chat.
+4. **Push your branch and open a pull request against `develop`.** Do this in each repo the task changed.
+   ```powershell
+   git push -u origin feature/KAN-84-adopt-flyway
+   # Re-pushing after a rebase: git push --force-with-lease  (your own branch only, never plain --force)
+   & "C:\Program Files\GitHub CLI\gh.exe" pr create --base develop --head feature/KAN-84-adopt-flyway --title "KAN-84: <ticket title>" --body-file pr.md
+   ```
+   - **The body (`pr.md`)** covers:
+     - the Jira link (`https://iraklikantar.atlassian.net/browse/KAN-84`);
+     - what changed and why;
+     - the acceptance checklist with what's met;
+     - the test results;
+     - anything left open;
+     - and it ends with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
+   - **If `gh` is missing or not logged in**, don't try to install it or log in yourself. Report the compare link instead (`https://github.com/ikant14/<repo>/compare/develop...<branch>?expand=1`), and tell the user.
+5. **In Jira:**
+   - Comment with the PR link(s), what changed, the test results, any acceptance item not met, and any decision recommendation you relied on.
    - Move the task to **In Review**.
    - Don't edit the description; report checklist status in your comment.
-4. **Release your slot:** stop your processes and delete your slot's lock file. Keep the worktree.
-5. **Finish, once the user says the task is done:** squash it to one commit, then fast-forward `develop`. Do this in each repo the task changed.
-   ```powershell
-   # In your worktree, on your task branch:
-   git rebase develop                 # if develop moved, run the tests again afterwards
-   git reset --soft develop           # squash: all your changes stay staged on top of develop
-   git commit -F msg.txt              # subject "KAN-84: <ticket title>", then a body (what and why), then the Co-Authored-By line
-   # Fast-forward develop to that single commit:
-   git -C C:\Users\user\IdeaProjects\bodiala merge --ff-only feature/KAN-84-adopt-flyway   # if develop is checked out in the main checkout
-   git fetch . feature/KAN-84-adopt-flyway:develop                                        # if develop is not checked out anywhere
-   ```
-   - **If the fast-forward fails**, another task reached `develop` first. Rebase onto `develop` again, run the tests again, and retry.
-   - **Never use a merge commit**, and never fast-forward from a checkout that has uncommitted changes. If the main checkout isn't clean, stop and tell the user.
-   - **Afterwards:**
-     - comment the `develop` commit hash on the Jira task and move it to **Done**;
-     - remove the worktree (`git worktree remove <path>`) and delete the branch (`git branch -d <branch>`).
-   - **Push `develop`, or open a pull request, only when the user asks.**
-6. **If you are blocked** (a missing decision, or a clash with another agent's work):
+6. **Release your slot:** stop your processes and delete your slot's lock file. Keep the worktree.
+7. **Review fixes:**
+   - commit on the same branch;
+   - rebase on `origin/develop`;
+   - run the credential check;
+   - `git push --force-with-lease`.
+
+   The PR updates itself.
+8. **Merging is the user's job.** The user lands each PR as one squashed commit on `develop`, with a linear history and never a merge commit. Don't merge, squash onto `develop`, or push `develop` yourself unless the user asks. If they ask you to squash the branch first:
+   - `git reset --soft origin/develop`;
+   - commit with the subject `KAN-84: <ticket title>`;
+   - `git push --force-with-lease`.
+
+   After the merge, when the user says so:
+   - move the Jira task to **Done**, with the `develop` commit hash in a comment;
+   - remove your worktree and delete the branch, locally and on GitHub.
+9. **If you are blocked** (a missing decision, or a clash with another agent's work):
    - say so in a comment on the issue;
    - move the task back to **To Do** if you can't continue;
    - tell the user.
