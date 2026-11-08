@@ -1,5 +1,6 @@
 package com.miirphys.bodiala.staticdata.web;
 
+import com.miirphys.bodiala.config.OpenApiConfig;
 import com.miirphys.bodiala.provider.CatalogImporterRegistry;
 import com.miirphys.bodiala.provider.ProviderId;
 import com.miirphys.bodiala.provider.hotelbeds.HotelbedsContentService;
@@ -17,6 +18,7 @@ import com.miirphys.bodiala.staticdata.repo.PropertyAmenityRepository;
 import com.miirphys.bodiala.staticdata.repo.RoomAmenityRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
@@ -71,8 +73,10 @@ public class StaticDataController {
     }
 
     /** Import the catalog from the supplier named by {@code ?provider=} (default {@code hotel.provider}). */
-    @Operation(summary = "Import the catalog from a supplier",
-            description = "Fills the local cache from the Hotelbeds Content API, replacing each table (idempotent).")
+    @Operation(summary = "Import the catalog from a supplier (staff only)",
+            description = "Fills the local cache from the Hotelbeds Content API, replacing each table (idempotent). "
+                    + "Requires the staff login (HTTP Basic).")
+    @SecurityRequirement(name = OpenApiConfig.STAFF_SCHEME)
     @PostMapping("/import")
     public ImportResult importCatalog(
             @Parameter(description = "Supplier to import from: hotelbeds (case-insensitive). "
