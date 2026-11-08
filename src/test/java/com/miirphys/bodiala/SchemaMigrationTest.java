@@ -1,6 +1,7 @@
 package com.miirphys.bodiala;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.sql.Connection;
 import java.util.Arrays;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.MigrationState;
 import org.junit.jupiter.api.Test;
@@ -76,22 +78,20 @@ class SchemaMigrationTest {
                 }
             }
 
-            // Migrate it the way the app does: with the main profile's baseline settings.
-            Properties app = PropertiesLoaderUtils.loadProperties(
-                    new FileSystemResource("src/main/resources/application.properties"));
+            // Migrate it the way the app does: with the main profile's Flyway settings.
+            Properties app = appProperties();
             Flyway.configure()
                     .configuration(flyway.getConfiguration())
                     .schemas(legacy)
                     .defaultSchema(legacy)
                     .baselineOnMigrate(Boolean.parseBoolean(app.getProperty("spring.flyway.baseline-on-migrate")))
                     .baselineVersion(app.getProperty("spring.flyway.baseline-version"))
+                    .outOfOrder(Boolean.parseBoolean(app.getProperty("spring.flyway.out-of-order")))
                     .load()
                     .migrate();
 
             // The baseline was recorded instead of re-running V1; the later migrations ran.
-            assertThat(jdbc.queryForList("SELECT version || ' ' || type || ' ' || success FROM " + legacy
-                    + ".flyway_schema_history WHERE version IS NOT NULL ORDER BY installed_rank", String.class))
-                    .startsWith("1 BASELINE true").contains("2026.11.08.1700 SQL true");
+            assertThat(history(legacy)).startsWith("1 BASELINE true").contains("2026.11.08.1700 SQL true");
 
             // No data lost: every row is still there, under the new column names.
             assertThat(jdbc.queryForList("SELECT agent_ref_no || '|' || supplier_booking_ref || '|'"
@@ -130,6 +130,49 @@ class SchemaMigrationTest {
             }
             jdbc.execute("DROP SCHEMA IF EXISTS " + legacy + " CASCADE");
         }
+    }
+
+    @Test
+    void anOlderTimestampedMigrationThatLandsAfterANewerOneStillRuns() throws Exception {
+        String scratch = testSchema + "_order";
+        assertThat(scratch).startsWith("bodiala_test");
+        jdbc.execute("DROP SCHEMA IF EXISTS " + scratch + " CASCADE");
+        try {
+            // A slot database already has a newer branch's migration...
+            flyway(scratch, false, "classpath:db/out-of-order/later").migrate();
+
+            // ...when an older-timestamped one lands on develop. Strict ordering would refuse to start:
+            assertThatThrownBy(() -> flyway(scratch, false,
+                    "classpath:db/out-of-order/later", "classpath:db/out-of-order/earlier").migrate())
+                    .isInstanceOf(FlywayException.class).hasMessageContaining("2099.01.01.1600");
+
+            // With the app's setting, the older one is applied late instead.
+            boolean outOfOrder = Boolean.parseBoolean(appProperties().getProperty("spring.flyway.out-of-order"));
+            flyway(scratch, outOfOrder, "classpath:db/out-of-order/later", "classpath:db/out-of-order/earlier")
+                    .migrate();
+
+            assertThat(history(scratch)).containsExactly("2099.01.01.1800 SQL true", "2099.01.01.1600 SQL true");
+            assertThat(jdbc.queryForList("SELECT tablename FROM pg_tables WHERE schemaname = ?"
+                    + " AND tablename <> 'flyway_schema_history' ORDER BY 1", String.class, scratch))
+                    .containsExactly("earlier_branch_table", "later_branch_table");
+        } finally {
+            jdbc.execute("DROP SCHEMA IF EXISTS " + scratch + " CASCADE");
+        }
+    }
+
+    private Flyway flyway(String schema, boolean outOfOrder, String... locations) {
+        return Flyway.configure().dataSource(dataSource).schemas(schema).defaultSchema(schema)
+                .locations(locations).outOfOrder(outOfOrder).load();
+    }
+
+    /** The main profile's properties (the test classpath shadows src/main's application.properties). */
+    private static Properties appProperties() throws java.io.IOException {
+        return PropertiesLoaderUtils.loadProperties(new FileSystemResource("src/main/resources/application.properties"));
+    }
+
+    private List<String> history(String schema) {
+        return jdbc.queryForList("SELECT version || ' ' || type || ' ' || success FROM " + schema
+                + ".flyway_schema_history WHERE version IS NOT NULL ORDER BY installed_rank", String.class);
     }
 
     private List<String> columns(String schema) {
