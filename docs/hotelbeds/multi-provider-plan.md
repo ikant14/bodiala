@@ -190,13 +190,16 @@ HTTP), response mappers (fixture-tested, HTTP-free).
 under `ddl-auto=update`):
 - Add `provider` as **nullable**, app-default `"REZLIVE"`; one-time `UPDATE hotel_booking SET
   provider='REZLIVE' WHERE provider IS NULL`.
-- **Do NOT rename** `rez_booking_id`/`rez_booking_code` (Hibernate never renames — it would add
-  `booking_ref` and leave the old `NOT NULL UNIQUE` column orphaned, breaking every INSERT).
-- **Keep** the single-column unique on `rez_booking_id` for now.
+- **Columns renamed (done, KAN-84 / OPS-1).** Under `ddl-auto=update` a rename was unsafe (Hibernate
+  never renames; it would add a new column and leave the old `NOT NULL UNIQUE` one orphaned). Flyway
+  now owns the schema, and migration `V2026_11_08_1700__rename_supplier_booking_columns.sql` renamed
+  `rez_booking_id` → **`supplier_booking_ref`** and `rez_booking_code` → **`supplier_booking_code`**
+  (unique constraint `idx_booking_rez_id` → `idx_booking_supplier_ref`), keeping the data.
+- **Kept** the single-column unique on `supplier_booking_ref`: `GET /api/bookings/{bookingId}`
+  looks a booking up by that reference alone. Composite uniques `(provider, supplier_booking_ref)`
+  / `(provider, agent_ref_no)` are still open; revisit with SEC-2 (opaque booking ids).
 - Add repo finders `findByProviderAndBookingRef` / `findByProviderAndAgentRefNo`; keep old finders
-  delegating with `REZLIVE`.
-- **Deferred to Phase 5**: column renames, composite uniques `(provider, booking_ref)` /
-  `(provider, agent_ref_no)`, introducing Flyway.
+  delegating with `REZLIVE`. *(Not needed while Hotelbeds is the only supplier.)*
 
 **Status normalization:** HB returns `CONFIRMED`/`CANCELLED`/`PRECONFIRMED`; stored convention is
 `Confirmed`/`Cancelled`. Normalize to one canonical vocabulary before persisting/returning.

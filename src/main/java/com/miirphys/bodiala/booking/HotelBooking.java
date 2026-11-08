@@ -14,10 +14,13 @@ import java.time.LocalDate;
  * A booking we made through a supplier, persisted locally. Keyed by our surrogate id; the supplier's
  * booking reference ({@code bookingId}) is stored alongside for cancel / lookup. ({@code bookingCode}
  * is a legacy second identifier, unused by Hotelbeds — it stores a single reference.)
+ *
+ * <p>Flyway owns the table ({@code src/main/resources/db/migration}); Hibernate only validates these
+ * mappings against it, so a mapping change needs a migration too.
  */
 @Entity
 @Table(name = "hotel_booking", indexes = {
-        @Index(name = "idx_booking_rez_id", columnList = "rez_booking_id", unique = true),
+        @Index(name = "idx_booking_supplier_ref", columnList = "supplier_booking_ref", unique = true),
         @Index(name = "idx_booking_agent_ref", columnList = "agent_ref_no", unique = true)
 })
 public class HotelBooking {
@@ -26,10 +29,10 @@ public class HotelBooking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "rez_booking_id", nullable = false, unique = true)
+    @Column(name = "supplier_booking_ref", nullable = false, unique = true)
     private String bookingId;
 
-    @Column(name = "rez_booking_code")
+    @Column(name = "supplier_booking_code")
     private String bookingCode;
 
     @Column(name = "agent_ref_no")

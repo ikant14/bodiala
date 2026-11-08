@@ -154,7 +154,7 @@ Run the servers in the background, and stop them by the process IDs you started.
 |---|---|
 | `build.gradle`, `package.json`, `package-lock.json` | Add only your own lines, and don't reorder. If the lockfile conflicts after a rebase, regenerate it with `npm.cmd install`. |
 | `application*.properties` | Add your keys as their own block, and don't reformat. |
-| Database schema | Until OPS-1 (Flyway) is merged, change it through the JPA entities (`ddl-auto=update`). After that, name migrations with a timestamp version, so parallel branches can't collide: `V2026_11_08_1530__add_booking_request.sql`. Never edit a migration that is already on the base branch. |
+| Database schema | Flyway owns it (OPS-1): add a migration in `src/main/resources/db/migration` and change the entity to match (`ddl-auto=validate` refuses to start otherwise). Name migrations with a timestamp version, so parallel branches can't collide: `V2026_11_08_1530__add_booking_request.sql`. Never edit a migration that is already on the base branch. Flyway runs with `out-of-order=true`, so a migration that reaches `develop` with an older timestamp than one a database already has still gets applied. If your migration depends on another branch's migration, give yours the later timestamp. |
 | `ApiExceptionHandler`, `api.ts`, `types.ts`, `styles.css`, `SearchView.tsx` | These change in many tasks. Keep diffs small and focused, and rebase before handing back. |
 | JSON the frontend reads | If your backend change alters it, change both repos in the same task (same branch name), or keep the old shape working. |
 | `CLAUDE.md` | Update only the lines your task makes wrong or adds (status, gotchas). |
