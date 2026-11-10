@@ -35,7 +35,7 @@ Done means `AGENTS.md` §6.1: checklist met, `gradlew test` green **in your slot
 
 ## 5. Hand back
 
-1. Credential check in each repo you'll push: `bash C:/Users/user/IdeaProjects/bodiala/scripts/check-secrets.sh . origin/main..HEAD`. Exit 1 → don't push; fix the commits.
+1. Credential check in each repo you'll push: `bash C:/Users/user/IdeaProjects/bodiala/scripts/check-secrets.sh . origin/main..HEAD`, run from the **Bash tool** (Git Bash); in PowerShell, `bash` may be WSL without a distro and fails. Exit 1 → don't push; fix the commits.
 2. Push, then open a PR against `main` titled `KAN-xx: <ticket title>` with the body from `AGENTS.md` §6.4 (Jira link, what and why, checklist status, test results, open items, ending with the Claude Code line). Use `& "C:\Program Files\GitHub CLI\gh.exe"`. If gh isn't available or logged in, give the compare link instead.
 3. Jira: comment with the PR link(s), what changed, test results, unmet checklist items and any decision recommendation you relied on. Transition to **In Review**. Don't edit the description.
 4. Release the slot: stop the processes you started, delete your lock file. Keep the worktree.
