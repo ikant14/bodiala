@@ -6,6 +6,12 @@ Several agents can work on this project at the same time, each on its own Jira t
 - where to work, and how to run the apps and tests without colliding with the other agents;
 - how to hand the work back.
 
+**The usual way in is three skills** (in `.claude/skills/`), which follow this file step by step:
+
+- `/dispatch [n]`: run by the user in a session they opened. Picks up to `n` ready tickets (max 4), asks once, claims them and starts one linked agent session per ticket, grouped in the sidebar as "bodiala agents".
+- `/work-ticket KAN-xx`: what each agent runs. Branch, build, test, PR, Jira → In Review. `/work-ticket KAN-xx review` applies the user's PR review comments.
+- `/land`: after the user merges PRs. Jira → Done with the commit hash, worktrees, branches and slots cleaned up, sessions archived.
+
 For the project itself (architecture, gotchas, build commands), read `CLAUDE.md` in this repo. For the other two repos, read `../bodiala-web/CLAUDE.md` and `../hotelbeds-stub/CLAUDE.md`.
 
 | Repo | Path | Git | Default ports |
